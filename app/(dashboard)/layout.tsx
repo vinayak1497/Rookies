@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/layout/container";
 import {
@@ -18,6 +17,7 @@ import {
     X,
 } from "lucide-react";
 import { useState } from "react";
+import { UserButton } from "@clerk/nextjs";
 
 const sidebarLinks = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -66,6 +66,14 @@ function Sidebar({ className }: { className?: string }) {
                     );
                 })}
             </nav>
+
+            {/* User / Sign Out */}
+            <div className="border-t border-border p-3">
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                    <UserButton afterSignOutUrl="/" />
+                    <span className="text-sm font-medium text-muted-foreground">Account</span>
+                </div>
+            </div>
         </aside>
     );
 }
@@ -114,16 +122,8 @@ export default function DashboardLayout({
 
                     <div className="flex-1" />
 
-                    {/* Clerk User Button */}
                     <div className="flex items-center gap-3">
-                        <UserButton
-                            afterSignOutUrl="/"
-                            appearance={{
-                                elements: {
-                                    avatarBox: "h-8 w-8",
-                                },
-                            }}
-                        />
+                        <UserButton afterSignOutUrl="/" />
                     </div>
                 </header>
 

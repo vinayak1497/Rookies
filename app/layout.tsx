@@ -53,8 +53,8 @@ export default function RootLayout({
         <body className="antialiased">
           {children}
           <Toaster
-            position="top-right"
-            richColors
+          position="top-right"
+          richColors
             toastOptions={{
               style: {
                 fontFamily: "var(--font-inter)",

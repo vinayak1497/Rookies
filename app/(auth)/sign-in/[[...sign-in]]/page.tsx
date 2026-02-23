@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import { SignIn } from "@clerk/nextjs";
-
-export const metadata: Metadata = {
-    title: "Sign In",
-};
 
 export default function SignInPage() {
     return (
-        <div className="flex items-center justify-center">
-            <SignIn />
-        </div>
+        <SignIn
+            appearance={{
+                elements: {
+                    rootBox: "mx-auto",
+                    card: "rounded-2xl shadow-xl border border-border",
+                },
+            }}
+        />
     );
 }
