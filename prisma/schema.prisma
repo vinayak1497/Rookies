@@ -1,0 +1,160 @@
+// This is your Prisma schema file.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// ─── Multi-Tenant Core ───
+
+model Business {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  type        String?  // "home_baker", "kirana", "instagram_brand", "other"
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  gstNumber   String?  @map("gst_number")
+  logoUrl     String?  @map("logo_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  members      BusinessMember[]
+  orders       Order[]
+  customers    Customer[]
+  payments     Payment[]
+  inventory    InventoryItem[]
+  activityLogs ActivityLog[]
+
+  @@map("businesses")
+}
+
+model BusinessMember {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  userId     String   @map("user_id")
+  role       String   @default("owner") // "owner", "admin", "staff", "viewer"
+  isActive   Boolean  @default(true) @map("is_active")
+  joinedAt   DateTime @default(now()) @map("joined_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@map("business_members")
+}
+
+// ─── Orders ───
+
+model Order {
+  id           String   @id @default(uuid())
+  businessId   String   @map("business_id")
+  customerId   String?  @map("customer_id")
+  orderNumber  String   @map("order_number")
+  status       String   @default("pending") // "pending", "confirmed", "in_progress", "completed", "cancelled"
+  totalAmount  Decimal  @map("total_amount") @db.Decimal(10, 2)
+  notes        String?
+  source       String?  // "whatsapp", "instagram", "walk_in", "phone"
+  deliveryDate DateTime? @map("delivery_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+  payments Payment[]
+
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
+  @@map("orders")
+}
+
+// ─── Customers ───
+
+model Customer {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  name       String
+  phone      String?
+  email      String?
+  address    String?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  @@index([businessId])
+  @@map("customers")
+}
+
+// ─── Payments ───
+
+model Payment {
+  id            String   @id @default(uuid())
+  businessId    String   @map("business_id")
+  orderId       String?  @map("order_id")
+  amount        Decimal  @db.Decimal(10, 2)
+  method        String?  // "upi", "cash", "bank_transfer", "card"
+  status        String   @default("pending") // "pending", "received", "failed"
+  transactionId String?  @map("transaction_id")
+  notes         String?
+  paidAt        DateTime? @map("paid_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId], references: [id])
+
+  @@index([businessId, status])
+  @@map("payments")
+}
+
+// ─── Inventory ───
+
+model InventoryItem {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  name       String
+  sku        String?
+  quantity   Int      @default(0)
+  unit       String?  // "kg", "g", "pcs", "liters"
+  costPrice  Decimal? @map("cost_price") @db.Decimal(10, 2)
+  sellPrice  Decimal? @map("sell_price") @db.Decimal(10, 2)
+  lowStockAt Int?     @map("low_stock_at")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("inventory_items")
+}
+
+// ─── Activity Logs ───
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  userId     String?  @map("user_id")
+  action     String   // "order_created", "payment_received", "inventory_updated", etc.
+  entity     String?  // "order", "payment", "inventory", "customer"
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+  @@map("activity_logs")
+}

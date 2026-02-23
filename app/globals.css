@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+/* ─── Rookies Brand Theme (Light Mode) ─── */
+:root {
+  /* Brand Colors */
+  --primary: #ec5b13;
+  --primary-hover: #d94f0a;
+  --primary-foreground: #ffffff;
+
+  --clay: #2d241f;
+  --clay-foreground: #ffffff;
+
+  --peach-soft: #f5e6e0;
+  --peach-foreground: #4a3728;
+
+  /* Neutral Palette */
+  --background: #f8f6f6;
+  --background-dark: #1a110c;
+  --foreground: #2d241f;
+
+  --card: #ffffff;
+  --card-foreground: #2d241f;
+
+  --muted: #f5f5f0;
+  --muted-foreground: #6b7280;
+
+  --border: #e5e5e0;
+  --input: #e5e5e0;
+  --ring: #ec5b13;
+
+  /* Semantic */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+
+  --warning: #f59e0b;
+  --warning-foreground: #1a1a1a;
+
+  /* Radius */
+  --radius: 0.625rem;
+}
+
+/* ─── Dark Mode Overrides ─── */
+.dark {
+  --background: #1a110c;
+  --foreground: #f5e6e0;
+  --card: #1a110c;
+  --card-foreground: #f5e6e0;
+  --muted: #2d241f;
+  --muted-foreground: #a09080;
+  --border: rgba(236, 91, 19, 0.1);
+  --input: rgba(236, 91, 19, 0.1);
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-clay: var(--clay);
+  --color-clay-foreground: var(--clay-foreground);
+
+  --color-peach-soft: var(--peach-soft);
+  --color-peach-foreground: var(--peach-foreground);
+
+  --color-background: var(--background);
+  --color-background-dark: var(--background-dark);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 0.25rem);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
+}
+
+/* ─── Base Styles ─── */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(236, 91, 19, 0.3);
+  color: var(--foreground);
+}
+
+/* ─── Focus Ring ─── */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ─── Editorial Heading ─── */
+.editorial-heading {
+  font-family: var(--font-serif), "Playfair Display", serif;
+  font-style: italic;
+}
+
+/* ─── Glass Navigation ─── */
+.glass-nav {
+  background: rgba(248, 246, 246, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dark .glass-nav {
+  background: rgba(26, 17, 12, 0.9);
+}
