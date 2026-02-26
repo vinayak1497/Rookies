@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export async function signInWithEmail(formData: FormData) {
@@ -35,24 +35,38 @@ export async function signUpWithEmail(formData: FormData) {
     return { error: "Email and password are required." };
   }
 
-  const supabase = await createClient();
+  // Use admin client to create a pre-confirmed user (bypasses email confirmation)
+  const adminClient = await createAdminClient();
 
-  const { error } = await supabase.auth.signUp({
+  const { error: createError } = await adminClient.auth.admin.createUser({
     email,
     password,
-    options: {
-      data: {
-        full_name: fullName || "",
-      },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/setup`,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName || "",
     },
   });
 
-  if (error) {
-    return { error: error.message };
+  if (createError) {
+    // If user already exists, tell them to sign in
+    if (createError.message.includes("already been registered") || createError.message.includes("already exists")) {
+      return { error: "This email is already registered. Please sign in instead." };
+    }
+    return { error: createError.message };
   }
 
-  return { success: "Check your email for a confirmation link." };
+  // Immediately sign in the newly created user
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    return { error: signInError.message };
+  }
+
+  redirect("/setup");
 }
 
 export async function signInWithGoogle() {
