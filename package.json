@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.38.1",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^7.4.0",
     "@supabase/ssr": "^0.8.0",

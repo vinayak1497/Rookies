@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -48,21 +47,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-        <body className="antialiased">
-          {children}
-          <Toaster
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="antialiased">
+        {children}
+        <Toaster
           position="top-right"
           richColors
-            toastOptions={{
-              style: {
-                fontFamily: "var(--font-inter)",
-              },
-            }}
-          />
-        </body>
-      </html>
-    </ClerkProvider>
+          toastOptions={{
+            style: {
+              fontFamily: "var(--font-inter)",
+            },
+          }}
+        />
+      </body>
+    </html>
   );
 }

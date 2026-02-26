@@ -1,13 +1,12 @@
 import Link from "next/link";
-import {
-    SignedIn,
-    SignedOut,
-    SignInButton,
-    SignUpButton,
-    UserButton,
-} from "@clerk/nextjs";
+import { createClient } from "@/lib/supabase/server";
 
-export function Navbar() {
+export async function Navbar() {
+    const supabase = await createClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
     return (
         <nav className="fixed top-0 w-full z-50 border-b border-primary/10 glass-nav">
             <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -42,26 +41,28 @@ export function Navbar() {
 
                 {/* Auth */}
                 <div className="flex items-center gap-4">
-                    <SignedOut>
-                        <SignInButton mode="redirect">
-                            <button className="text-sm font-semibold px-4 py-2 hover:text-primary transition-colors">
-                                Log In
-                            </button>
-                        </SignInButton>
-                        <SignUpButton mode="redirect">
-                            <button className="bg-primary text-white text-sm font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition-all shadow-lg shadow-primary/20">
-                                Get Started Free
-                            </button>
-                        </SignUpButton>
-                    </SignedOut>
-                    <SignedIn>
-                        <Link href="/dashboard">
-                            <button className="text-sm font-semibold px-4 py-2 hover:text-primary transition-colors">
-                                Dashboard
-                            </button>
-                        </Link>
-                        <UserButton afterSignOutUrl="/" />
-                    </SignedIn>
+                    {user ? (
+                        <>
+                            <Link href="/dashboard">
+                                <button className="text-sm font-semibold px-4 py-2 hover:text-primary transition-colors">
+                                    Dashboard
+                                </button>
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link href="/sign-in">
+                                <button className="text-sm font-semibold px-4 py-2 hover:text-primary transition-colors">
+                                    Log In
+                                </button>
+                            </Link>
+                            <Link href="/sign-up">
+                                <button className="bg-primary text-white text-sm font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition-all shadow-lg shadow-primary/20">
+                                    Get Started Free
+                                </button>
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
         </nav>

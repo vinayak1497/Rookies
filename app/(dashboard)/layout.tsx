@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/layout/container";
 import {
@@ -15,9 +15,11 @@ import {
     Settings,
     Menu,
     X,
+    LogOut,
+    User,
 } from "lucide-react";
 import { useState } from "react";
-import { UserButton } from "@clerk/nextjs";
+import { createClient } from "@/lib/supabase/client";
 
 const sidebarLinks = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -28,6 +30,43 @@ const sidebarLinks = [
     { href: "/dashboard/whatsapp", label: "WhatsApp", icon: MessageCircle },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
+
+function UserMenu() {
+    const router = useRouter();
+    const [open, setOpen] = useState(false);
+
+    async function handleSignOut() {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        router.push("/");
+        router.refresh();
+    }
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setOpen(!open)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            >
+                <User className="h-4 w-4" />
+            </button>
+            {open && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                    <div className="absolute right-0 top-full mt-2 z-50 w-48 rounded-lg border border-border bg-card p-1 shadow-lg">
+                        <button
+                            onClick={handleSignOut}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            Sign out
+                        </button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
 
 function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname();
@@ -70,7 +109,7 @@ function Sidebar({ className }: { className?: string }) {
             {/* User / Sign Out */}
             <div className="border-t border-border p-3">
                 <div className="flex items-center gap-3 px-3 py-2.5">
-                    <UserButton afterSignOutUrl="/" />
+                    <UserMenu />
                     <span className="text-sm font-medium text-muted-foreground">Account</span>
                 </div>
             </div>
@@ -123,7 +162,7 @@ export default function DashboardLayout({
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-3">
-                        <UserButton afterSignOutUrl="/" />
+                        <UserMenu />
                     </div>
                 </header>
 

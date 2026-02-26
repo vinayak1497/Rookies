@@ -1,24 +1,24 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
  * Fetch all orders for the current user's business.
- * Uses Clerk auth to identify the user, then queries Supabase
- * via the admin client (RLS doesn't know about Clerk users).
+ * Uses Supabase auth to identify the user, then queries via RLS.
  */
 export async function getOrdersForUser() {
-    const { userId } = await auth();
-    if (!userId) return { error: "Not authenticated", orders: [] };
-
     const supabase = await createClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: "Not authenticated", orders: [] };
 
     // 1. Find the user's business via business_members
     const { data: membership, error: memberError } = await supabase
         .from("business_members")
         .select("business_id")
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .limit(1)
         .single();
@@ -50,10 +50,12 @@ export async function getOrdersForUser() {
  * Mark an order as "completed" (delivered).
  */
 export async function markOrderDelivered(orderId: string) {
-    const { userId } = await auth();
-    if (!userId) return { error: "Not authenticated" };
-
     const supabase = await createClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: "Not authenticated" };
 
     // Verify user owns this order's business
     const { data: order } = await supabase
@@ -68,7 +70,7 @@ export async function markOrderDelivered(orderId: string) {
         .from("business_members")
         .select("id")
         .eq("business_id", order.business_id)
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .single();
 
