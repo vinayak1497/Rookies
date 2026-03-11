@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export async function Navbar() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const cookieStore = await cookies();
+    const hasSession = !!cookieStore.get("__session")?.value;
 
     return (
         <nav className="fixed top-0 w-full z-50 border-b border-primary/10 glass-nav">
@@ -41,7 +39,7 @@ export async function Navbar() {
 
                 {/* Auth */}
                 <div className="flex items-center gap-4">
-                    {user ? (
+                    {hasSession ? (
                         <>
                             <Link href="/dashboard">
                                 <button className="text-sm font-semibold px-4 py-2 hover:text-primary transition-colors">

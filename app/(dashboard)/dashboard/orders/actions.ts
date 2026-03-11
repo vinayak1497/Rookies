@@ -1,87 +1,72 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabaseAdmin() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
 
 /**
- * Fetch all orders for the current user's business.
- * Uses Supabase auth to identify the user, then queries via RLS.
+ * Fetch all orders (Supabase flat `orders` table).
  */
 export async function getOrdersForUser() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    try {
+        const supabase = getSupabaseAdmin();
+        const { data: orders, error } = await supabase
+            .from("orders")
+            .select("*")
+            .order("created_at", { ascending: false });
 
-    if (!user) return { error: "Not authenticated", orders: [] };
+        if (error) {
+            console.error("[orders] Supabase error:", error);
+            return { error: "Failed to load orders", orders: [] };
+        }
 
-    // 1. Find the user's business via business_members
-    const { data: membership, error: memberError } = await supabase
-        .from("business_members")
-        .select("business_id")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
+        // Map to the shape OrdersList expects
+        const mapped = (orders ?? []).map((o) => ({
+            id: o.id,
+            order_number: o.id.slice(0, 8).toUpperCase(),
+            status: o.status || "pending",
+            total_amount: Number(o.total_amount) || 0,
+            notes: Array.isArray(o.items) ? JSON.stringify(o.items) : o.items,
+            source: o.source,
+            delivery_date: o.delivery_time || null,
+            created_at: o.created_at,
+            customer: o.customer_name
+                ? { name: o.customer_name, phone: o.customer_phone || null }
+                : null,
+            payments: [] as { status: string; amount: number }[],
+        }));
 
-    if (memberError || !membership) {
-        return { error: null, orders: [] };
+        return { error: null, orders: mapped };
+    } catch (err) {
+        console.error("[orders] Error:", err);
+        return { error: "Failed to load orders", orders: [] };
     }
-
-    // 2. Fetch orders with customer data, sorted newest first
-    const { data: orders, error: ordersError } = await supabase
-        .from("orders")
-        .select(`
-            *,
-            customer:customers(name, phone),
-            payments(status, amount)
-        `)
-        .eq("business_id", membership.business_id)
-        .order("created_at", { ascending: false });
-
-    if (ordersError) {
-        console.error("[orders] Fetch error:", ordersError.message);
-        return { error: ordersError.message, orders: [] };
-    }
-
-    return { error: null, orders: orders ?? [] };
 }
 
 /**
  * Mark an order as "completed" (delivered).
  */
 export async function markOrderDelivered(orderId: string) {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    try {
+        const supabase = getSupabaseAdmin();
+        const { error } = await supabase
+            .from("orders")
+            .update({ status: "completed" })
+            .eq("id", orderId);
 
-    if (!user) return { error: "Not authenticated" };
+        if (error) {
+            console.error("[orders] Update error:", error);
+            return { error: "Failed to update order" };
+        }
 
-    // Verify user owns this order's business
-    const { data: order } = await supabase
-        .from("orders")
-        .select("business_id")
-        .eq("id", orderId)
-        .single();
-
-    if (!order) return { error: "Order not found" };
-
-    const { data: membership } = await supabase
-        .from("business_members")
-        .select("id")
-        .eq("business_id", order.business_id)
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .single();
-
-    if (!membership) return { error: "Unauthorized" };
-
-    // Update the order status
-    const { error } = await supabase
-        .from("orders")
-        .update({ status: "completed" })
-        .eq("id", orderId);
-
-    if (error) return { error: error.message };
-    return { success: true };
+        return { success: true };
+    } catch (err) {
+        console.error("[orders] Error:", err);
+        return { error: "Failed to update order" };
+    }
 }

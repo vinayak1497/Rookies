@@ -1,31 +1,78 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * n8n Webhook Endpoint
  * POST /api/webhooks/n8n
  *
- * This endpoint will receive webhooks from n8n workflows.
- * Future implementation:
- * - Validate webhook secret
- * - Parse n8n event payload
- * - Route to appropriate handler (order updates, WhatsApp triggers, etc.)
+ * Receives parsed WhatsApp orders from the n8n AI workflow.
+ * Inserts directly into the Supabase `orders` table via REST API.
  */
+
+// Admin Supabase client (uses service role key — bypasses RLS)
+function getSupabaseAdmin() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
+
 export async function POST(request: NextRequest) {
     try {
-        // TODO: Validate webhook secret
-        // const secret = request.headers.get("x-webhook-secret");
-        // if (secret !== process.env.N8N_WEBHOOK_SECRET) {
-        //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        // }
+        // Validate webhook secret (skip if not configured — allows easy initial testing)
+        const secret = request.headers.get("x-rookies-secret");
+        const expectedSecret = process.env.ROOKIES_WEBHOOK_SECRET;
+        if (expectedSecret && secret !== expectedSecret) {
+            console.warn("[n8n webhook] Invalid secret received");
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         const body = await request.json();
+        console.log("[n8n webhook] Incoming order:", JSON.stringify(body));
 
-        // TODO: Process n8n webhook payload
-        console.log("[n8n webhook] Received:", JSON.stringify(body).slice(0, 200));
+        // Validate required fields
+        const { business_id, customer_name, customer_phone, items, total_amount, delivery_time, source } = body;
+        if (!customer_name && !items) {
+            return NextResponse.json(
+                { success: false, error: "Missing required fields: customer_name or items" },
+                { status: 400 }
+            );
+        }
+
+        const supabase = getSupabaseAdmin();
+
+        const { data: order, error } = await supabase
+            .from("orders")
+            .insert({
+                business_id: business_id || "default-business-id",
+                customer_name: customer_name || "Unknown",
+                customer_phone: customer_phone ? String(customer_phone) : null,
+                items: items || [],
+                total_amount: total_amount ?? 0,
+                delivery_time: delivery_time || null,
+                source: source || "whatsapp",
+                status: "pending",
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error("[n8n webhook] Supabase insert error:", error);
+            return NextResponse.json(
+                { success: false, error: "Failed to save order" },
+                { status: 500 }
+            );
+        }
+
+        console.log("[n8n webhook] Order created:", order.id);
 
         return NextResponse.json({
             success: true,
-            message: "Webhook received",
+            order: {
+                id: order.id,
+                status: order.status,
+                customer_name: order.customer_name,
+            },
         });
     } catch (error) {
         console.error("[n8n webhook] Error:", error);
@@ -37,7 +84,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET handler for webhook verification.
+ * GET handler for webhook verification / health check.
  */
 export async function GET() {
     return NextResponse.json({

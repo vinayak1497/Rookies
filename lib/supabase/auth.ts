@@ -1,15 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser, requireAuth } from "@/lib/firebase-admin";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 /**
- * Get the current authenticated user from Supabase.
+ * Get the current authenticated user's database record.
  * Returns `null` if no user is signed in.
  */
 export async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const authUser = await getAuthUser();
+  if (!authUser) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { firebaseUid: authUser.uid },
+  });
+
   return user;
 }
 
@@ -26,11 +30,7 @@ export async function requireUser() {
 }
 
 /**
- * Sign out the current user and redirect to the homepage.
+ * Get the Firebase auth user (decoded token) for the current session.
+ * Returns null if not authenticated.
  */
-export async function signOut() {
-  "use server";
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/");
-}
+export { getAuthUser } from "@/lib/firebase-admin";

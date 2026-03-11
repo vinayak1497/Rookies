@@ -19,7 +19,7 @@ import {
     User,
 } from "lucide-react";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { logout } from "@/lib/firebase-auth";
 
 const sidebarLinks = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -36,8 +36,8 @@ function UserMenu() {
     const [open, setOpen] = useState(false);
 
     async function handleSignOut() {
-        const supabase = createClient();
-        await supabase.auth.signOut();
+        await logout();
+        await fetch("/api/auth/session", { method: "DELETE" });
         router.push("/");
         router.refresh();
     }
