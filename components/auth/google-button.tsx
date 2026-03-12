@@ -25,10 +25,21 @@ export function GoogleButton({
       const idToken = await user.getIdToken();
       await onSuccess(idToken);
     } catch (err: unknown) {
+      console.error("[GoogleButton] Sign-in error:", err);
       const message =
         err instanceof Error ? err.message : "Google sign-in failed";
       // Don't show error for user-cancelled popups
-      if (!message.includes("popup-closed-by-user")) {
+      if (message.includes("popup-closed-by-user")) {
+        setIsLoading(false);
+        return;
+      }
+      if (message.includes("unauthorized-domain") || message.includes("auth/unauthorized-domain")) {
+        setError("This domain is not authorized for sign-in. Please use the production URL.");
+      } else if (message.includes("network-request-failed")) {
+        setError("Network error. Check your connection and try again.");
+      } else if (message.includes("popup-blocked")) {
+        setError("Popup was blocked. Please allow popups for this site.");
+      } else {
         setError("That didn\u2019t work. Please try again.");
       }
       setIsLoading(false);
