@@ -41,10 +41,14 @@ export async function POST(request: NextRequest) {
 
         const supabase = getSupabaseAdmin();
 
+        // Only pass business_id if it looks like a real UUID (prevents FK / type errors)
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const validBusinessId = business_id && UUID_REGEX.test(business_id) ? business_id : null;
+
         const { data: order, error } = await supabase
             .from("orders")
             .insert({
-                business_id: business_id || "default-business-id",
+                ...(validBusinessId ? { business_id: validBusinessId } : {}),
                 customer_name: customer_name || "Unknown",
                 customer_phone: customer_phone ? String(customer_phone) : null,
                 items: items || [],
