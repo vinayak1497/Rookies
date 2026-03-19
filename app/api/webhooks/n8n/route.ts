@@ -21,23 +21,16 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
     try {
-        // 🔐 Validate webhook secret
-        const secret = request.headers.get("x-rookies-secret");
-        const expectedSecret = process.env.ROOKIES_WEBHOOK_SECRET;
-        if (expectedSecret && secret !== expectedSecret) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
         const body = await request.json();
         console.log("[n8n webhook] Incoming:", JSON.stringify(body));
 
         const supabase = getSupabaseAdmin();
 
-        // 👇 NEW: detect request type
+        // 👇 detect request type
         const type = body.type || "order";
 
         // =========================================================
-        // 🟢 1. ORDER CREATION (existing)
+        // 🟢 1. ORDER CREATION
         // =========================================================
         if (type === "order") {
             const {
@@ -85,7 +78,7 @@ export async function POST(request: NextRequest) {
         }
 
         // =========================================================
-        // 🚴 2. DELIVERY CREATION (NEW)
+        // 🚴 2. DELIVERY CREATION
         // =========================================================
         if (type === "delivery") {
             const { order_id, customer_name, customer_phone, address } = body;
