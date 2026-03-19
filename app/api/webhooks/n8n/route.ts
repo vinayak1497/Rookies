@@ -5,11 +5,13 @@ import { createClient } from "@supabase/supabase-js";
  * n8n Webhook Endpoint
  * POST /api/webhooks/n8n
  *
- * Receives parsed WhatsApp orders from the n8n AI workflow.
- * Inserts directly into the Supabase `orders` table via REST API.
+ * Handles:
+ * - Order creation
+ * - Mock delivery creation
+ * - (Future) payment updates
  */
 
-// Admin Supabase client (uses service role key — bypasses RLS)
+// Admin Supabase client
 function getSupabaseAdmin() {
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,63 +21,133 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
     try {
-        // Validate webhook secret (skip if not configured — allows easy initial testing)
+        // 🔐 Validate webhook secret
         const secret = request.headers.get("x-rookies-secret");
         const expectedSecret = process.env.ROOKIES_WEBHOOK_SECRET;
         if (expectedSecret && secret !== expectedSecret) {
-            console.warn("[n8n webhook] Invalid secret received");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const body = await request.json();
-        console.log("[n8n webhook] Incoming order:", JSON.stringify(body));
-
-        // Validate required fields
-        const { business_id, customer_name, customer_phone, items, total_amount, delivery_time, source } = body;
-        if (!customer_name && !items) {
-            return NextResponse.json(
-                { success: false, error: "Missing required fields: customer_name or items" },
-                { status: 400 }
-            );
-        }
+        console.log("[n8n webhook] Incoming:", JSON.stringify(body));
 
         const supabase = getSupabaseAdmin();
 
-        const { data: order, error } = await supabase
-            .from("orders")
-            .insert({
-                business_id: business_id || "default-business-id",
-                customer_name: customer_name || "Unknown",
-                customer_phone: customer_phone ? String(customer_phone) : null,
-                items: items || [],
-                total_amount: total_amount ?? 0,
-                delivery_time: delivery_time || null,
-                source: source || "whatsapp",
-                status: "pending",
-            })
-            .select()
-            .single();
+        // 👇 NEW: detect request type
+        const type = body.type || "order";
 
-        if (error) {
-            console.error("[n8n webhook] Supabase insert error:", error);
-            return NextResponse.json(
-                { success: false, error: "Failed to save order" },
-                { status: 500 }
-            );
+        // =========================================================
+        // 🟢 1. ORDER CREATION (existing)
+        // =========================================================
+        if (type === "order") {
+            const {
+                business_id,
+                customer_name,
+                customer_phone,
+                items,
+                total_amount,
+                delivery_time,
+                source
+            } = body;
+
+            if (!customer_name && !items) {
+                return NextResponse.json(
+                    { success: false, error: "Missing required fields" },
+                    { status: 400 }
+                );
+            }
+
+            const { data: order, error } = await supabase
+                .from("orders")
+                .insert({
+                    business_id: business_id || "default-business-id",
+                    customer_name: customer_name || "Unknown",
+                    customer_phone: customer_phone ? String(customer_phone) : null,
+                    items: items || [],
+                    total_amount: total_amount ?? 0,
+                    delivery_time: delivery_time || null,
+                    source: source || "whatsapp",
+                    status: "pending",
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error("[ORDER ERROR]:", error);
+                return NextResponse.json({ success: false }, { status: 500 });
+            }
+
+            return NextResponse.json({
+                success: true,
+                type: "order",
+                order_id: order.id
+            });
         }
 
-        console.log("[n8n webhook] Order created:", order.id);
+        // =========================================================
+        // 🚴 2. DELIVERY CREATION (NEW)
+        // =========================================================
+        if (type === "delivery") {
+            const { order_id, customer_name, customer_phone, address } = body;
 
-        return NextResponse.json({
-            success: true,
-            order: {
-                id: order.id,
-                status: order.status,
-                customer_name: order.customer_name,
-            },
-        });
+            const partners = [
+                { name: "Ravi Kumar", vehicle: "Bike" },
+                { name: "Amit Singh", vehicle: "Scooter" },
+                { name: "Imran Shaikh", vehicle: "Bike" }
+            ];
+
+            const random = partners[Math.floor(Math.random() * partners.length)];
+
+            const delivery_id = "DEL_" + Date.now();
+
+            const etaMinutes = Math.floor(Math.random() * 20) + 20;
+
+            const delivery = {
+                delivery_id,
+                order_id,
+                customer_name,
+                customer_phone,
+                address,
+                partner_name: random.name,
+                vehicle: random.vehicle,
+                eta: `${etaMinutes} mins`,
+                status: "assigned"
+            };
+
+            console.log("[DELIVERY CREATED]:", delivery);
+
+            return NextResponse.json({
+                success: true,
+                type: "delivery",
+                delivery
+            });
+        }
+
+        // =========================================================
+        // 💰 3. PAYMENT UPDATE (FUTURE READY)
+        // =========================================================
+        if (type === "payment") {
+            const { order_id, status } = body;
+
+            await supabase
+                .from("orders")
+                .update({ status: status || "paid" })
+                .eq("id", order_id);
+
+            return NextResponse.json({
+                success: true,
+                type: "payment",
+                updated: true
+            });
+        }
+
+        return NextResponse.json(
+            { success: false, error: "Invalid type" },
+            { status: 400 }
+        );
+
     } catch (error) {
-        console.error("[n8n webhook] Error:", error);
+        console.error("[WEBHOOK ERROR]:", error);
         return NextResponse.json(
             { success: false, error: "Internal server error" },
             { status: 500 }
@@ -83,13 +155,11 @@ export async function POST(request: NextRequest) {
     }
 }
 
-/**
- * GET handler for webhook verification / health check.
- */
+// GET handler
 export async function GET() {
     return NextResponse.json({
         status: "ok",
-        endpoint: "n8n-webhook",
-        message: "Send POST requests to this endpoint from n8n workflows.",
+        message: "Webhook active",
+        supported_types: ["order", "delivery", "payment"]
     });
 }
