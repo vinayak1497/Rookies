@@ -73,6 +73,7 @@ export default async function DashboardPage() {
     let orderCount = 0;
     let totalRevenue = 0;
     let pendingCount = 0;
+    let customerCount = 0;
     let recentOrders: {
         id: string;
         status: string;
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
         // Fetch all orders for stats + recent 5
         const { data: allOrders } = await supabase
             .from("orders")
-            .select("id, total_amount, status");
+            .select("id, total_amount, status, customer_name, customer_phone");
 
         const { data: recent } = await supabase
             .from("orders")
@@ -104,15 +105,19 @@ export default async function DashboardPage() {
             orderCount = allOrders.length;
             totalRevenue = allOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
             pendingCount = allOrders.filter((o) => o.status === "pending").length;
+            
+            const uniqueCustomers = new Set();
+            allOrders.forEach(o => {
+                const identifier = o.customer_phone || o.customer_name;
+                if (identifier) uniqueCustomers.add(identifier);
+            });
+            customerCount = uniqueCustomers.size || orderCount;
         }
 
         recentOrders = recent ?? [];
     } catch (err) {
         console.error("[Dashboard] DB fetch failed:", err);
     }
-
-    // Unique customer names as a proxy for customer count
-    const uniqueCustomers = new Set(recentOrders.map((o) => o.customer_name).filter(Boolean));
 
     const stats = [
         {
@@ -129,7 +134,7 @@ export default async function DashboardPage() {
         },
         {
             title: "Customers",
-            value: String(uniqueCustomers.size || orderCount),
+            value: String(customerCount),
             change: `unique`,
             icon: Users,
         },
