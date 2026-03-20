@@ -52,7 +52,11 @@ function formatINR(amount: number): string {
 }
 
 function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    
+    return date.toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
         year: "numeric",
