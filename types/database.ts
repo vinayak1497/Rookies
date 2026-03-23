@@ -5,7 +5,18 @@ export type UserRole = "owner" | "admin" | "staff" | "viewer";
 
 export type BusinessType = "home_baker" | "kirana" | "instagram_brand" | "other";
 
-export type OrderStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
+export type OrderStatus =
+    | "pending"
+    | "confirmed"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "PLACED"
+    | "CONFIRMED"
+    | "PREPARING"
+    | "READY"
+    | "OUT_FOR_DELIVERY"
+    | "DELIVERED";
 
 export type OrderSource = "whatsapp" | "instagram" | "walk_in" | "phone";
 
@@ -56,6 +67,10 @@ export interface Order {
     notes: string | null;
     source: OrderSource | null;
     deliveryDate: string | null;
+    deliveryStartedAt?: string | null;
+    estimatedDeliveryTime?: string | null;
+    otp?: string | null;
+    otpVerified?: boolean;
     createdAt: string;
     updatedAt: string;
 }

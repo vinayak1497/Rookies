@@ -11,7 +11,7 @@ import {
     Users,
     IndianRupee,
     Package,
-    MessageCircle,
+    Truck,
     Settings,
     Menu,
     X,
@@ -27,7 +27,7 @@ const sidebarLinks = [
     { href: "/dashboard/customers", label: "Customers", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: IndianRupee },
     { href: "/dashboard/inventory", label: "Inventory", icon: Package },
-    { href: "/dashboard/whatsapp", label: "WhatsApp", icon: MessageCircle },
+    { href: "/delivery", label: "Delivery", icon: Truck },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
