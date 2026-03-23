@@ -9,6 +9,17 @@ datasource db {
   provider  = "postgresql"
 }
 
+// ─── Enums ───
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+}
+
 // ─── Multi-Tenant Core ───
 
 model User {
@@ -68,21 +79,21 @@ model BusinessMember {
 // ─── Orders ───
 
 model Order {
-  id           String   @id @default(uuid())
-  businessId   String   @map("business_id")
-  customerId   String?  @map("customer_id")
-  orderNumber  String   @map("order_number")
-  status       String   @default("PLACED") // "PLACED", "CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"
-  totalAmount  Decimal  @map("total_amount") @db.Decimal(10, 2)
-  notes        String?
-  source       String?  // "whatsapp", "instagram", "walk_in", "phone"
-  deliveryDate DateTime? @map("delivery_date")
-  deliveryStartedAt    DateTime? @map("delivery_started_at")
-  estimatedDeliveryTime DateTime? @map("estimated_delivery_time")
-  otp                  String?
-  otpVerified          Boolean  @default(false) @map("otp_verified")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                    String      @id @default(uuid())
+  businessId            String      @map("business_id")
+  customerId            String?     @map("customer_id")
+  orderNumber           String      @map("order_number")
+  status                OrderStatus @default(PLACED)
+  totalAmount           Decimal     @map("total_amount") @db.Decimal(10, 2)
+  notes                 String?
+  source                String?     // "whatsapp", "instagram", "walk_in", "phone"
+  deliveryDate          DateTime?   @map("delivery_date")
+  deliveryStartedAt     DateTime?   @map("delivery_started_at")
+  estimatedDeliveryTime DateTime?   @map("estimated_delivery_time")
+  otp                   String?
+  otpVerified           Boolean     @default(false) @map("otp_verified")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer Customer? @relation(fields: [customerId], references: [id])

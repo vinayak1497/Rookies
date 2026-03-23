@@ -6,11 +6,6 @@ export type UserRole = "owner" | "admin" | "staff" | "viewer";
 export type BusinessType = "home_baker" | "kirana" | "instagram_brand" | "other";
 
 export type OrderStatus =
-    | "pending"
-    | "confirmed"
-    | "in_progress"
-    | "completed"
-    | "cancelled"
     | "PLACED"
     | "CONFIRMED"
     | "PREPARING"

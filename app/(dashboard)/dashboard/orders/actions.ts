@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { OrderStatus } from "@/types/database";
 
 function getSupabaseAdmin() {
     return createClient(
@@ -12,6 +13,21 @@ function getSupabaseAdmin() {
 /**
  * Fetch all orders (Supabase flat `orders` table).
  */
+function normalizeStatus(status: string | null): OrderStatus {
+    const upper = (status ?? "PLACED").toUpperCase();
+    if (
+        upper === "PLACED" ||
+        upper === "CONFIRMED" ||
+        upper === "PREPARING" ||
+        upper === "READY" ||
+        upper === "OUT_FOR_DELIVERY" ||
+        upper === "DELIVERED"
+    ) {
+        return upper as OrderStatus;
+    }
+    return "PLACED";
+}
+
 export async function getOrdersForUser() {
     try {
         const supabase = getSupabaseAdmin();
@@ -21,7 +37,6 @@ export async function getOrdersForUser() {
             .order("created_at", { ascending: false });
 
         if (error) {
-            console.error("[orders] Supabase error:", error);
             return { error: "Failed to load orders", orders: [] };
         }
 
@@ -29,7 +44,7 @@ export async function getOrdersForUser() {
         const mapped = (orders ?? []).map((o) => ({
             id: o.id,
             order_number: o.id.slice(0, 8).toUpperCase(),
-            status: o.status || "pending",
+            status: normalizeStatus(o.status),
             total_amount: Number(o.total_amount) || 0,
             notes: Array.isArray(o.items) ? JSON.stringify(o.items) : o.items,
             source: o.source,
@@ -42,31 +57,7 @@ export async function getOrdersForUser() {
         }));
 
         return { error: null, orders: mapped };
-    } catch (err) {
-        console.error("[orders] Error:", err);
+    } catch (_err) {
         return { error: "Failed to load orders", orders: [] };
-    }
-}
-
-/**
- * Mark an order as "completed" (delivered).
- */
-export async function markOrderDelivered(orderId: string) {
-    try {
-        const supabase = getSupabaseAdmin();
-        const { error } = await supabase
-            .from("orders")
-            .update({ status: "completed" })
-            .eq("id", orderId);
-
-        if (error) {
-            console.error("[orders] Update error:", error);
-            return { error: "Failed to update order" };
-        }
-
-        return { success: true };
-    } catch (err) {
-        console.error("[orders] Error:", err);
-        return { error: "Failed to update order" };
     }
 }

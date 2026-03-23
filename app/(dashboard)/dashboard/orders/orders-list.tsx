@@ -1,19 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-    Phone,
-    Clock,
-    MessageCircle,
-    CheckCircle2,
-    PackageOpen,
-    ShoppingBag,
-} from "lucide-react";
+import { Phone, Clock, MessageCircle, CheckCircle2, PackageOpen, ShoppingBag, Truck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { markOrderDelivered } from "./actions";
 import { toast } from "sonner";
+import { OrderStatus } from "@/types/database";
 
 // ─── Types for the Supabase joined query ───
 
@@ -30,7 +23,7 @@ interface OrderPayment {
 interface OrderRow {
     id: string;
     order_number: string;
-    status: string;
+    status: OrderStatus;
     total_amount: number;
     notes: string | null;
     source: string | null;
@@ -88,22 +81,22 @@ function isPaid(payments: OrderPayment[]): boolean {
 
 // ─── Status / Payment Badges ───
 
-function StatusBadge({ status }: { status: string }) {
-    const isDelivered = status === "completed";
+function StatusBadge({ status }: { status: OrderStatus }) {
+    const delivered = status === "DELIVERED";
     return (
         <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                isDelivered
+                delivered
                     ? "bg-green-50 text-green-700"
                     : "bg-amber-50 text-amber-700"
             }`}
         >
-            {isDelivered ? (
+            {delivered ? (
                 <CheckCircle2 className="h-3 w-3" />
             ) : (
                 <Clock className="h-3 w-3" />
             )}
-            {isDelivered ? "Delivered" : "Pending"}
+            {delivered ? "Delivered" : status.replaceAll("_", " ")}
         </span>
     );
 }
@@ -134,24 +127,57 @@ function SourceBadge({ source }: { source: string | null }) {
 
 // ─── Order Card ───
 
+function nextStatusFor(status: OrderStatus): OrderStatus | null {
+    switch (status) {
+        case "PLACED":
+            return "CONFIRMED";
+        case "CONFIRMED":
+            return "PREPARING";
+        case "PREPARING":
+            return "READY";
+        case "READY":
+            return "OUT_FOR_DELIVERY";
+        case "OUT_FOR_DELIVERY":
+        case "DELIVERED":
+        default:
+            return null;
+    }
+}
+
 function OrderCard({ order }: { order: OrderRow }) {
-    const [isPending, startTransition] = useTransition();
     const router = useRouter();
+    const [loading, setLoading] = useState(false);
 
     const items = parseItems(order.notes);
     const paid = isPaid(order.payments);
-    const isDelivered = order.status === "completed";
+    const nextStatus = nextStatusFor(order.status);
 
-    function handleMarkDelivered() {
-        startTransition(async () => {
-            const result = await markOrderDelivered(order.id);
-            if (result.error) {
-                toast.error(result.error);
+    async function handleAdvance() {
+        if (order.status === "READY") {
+            router.push("/delivery");
+            return;
+        }
+
+        if (!nextStatus) return;
+        setLoading(true);
+        try {
+            const res = await fetch("/api/orders/update-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: order.id, nextStatus }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data?.error ?? "Failed to update order");
             } else {
-                toast.success(`Order ${order.order_number} marked as delivered`);
+                toast.success(`Order moved to ${nextStatus.replaceAll("_", " ")}`);
                 router.refresh();
             }
-        });
+        } catch (error) {
+            toast.error("Unable to update order");
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -220,18 +246,36 @@ function OrderCard({ order }: { order: OrderRow }) {
                 </p>
 
                 {/* CTA */}
-                {!isDelivered && (
-                    <Button
-                        className="w-full"
-                        onClick={handleMarkDelivered}
-                        isLoading={isPending}
-                    >
+                {order.status !== "DELIVERED" && nextStatus && order.status !== "READY" && (
+                    <Button className="w-full" onClick={handleAdvance} isLoading={loading}>
                         <CheckCircle2 className="h-4 w-4" />
-                        Mark as Delivered
+                        {order.status === "PREPARING"
+                            ? "Mark Ready"
+                            : "Start Preparing"}
                     </Button>
                 )}
 
-                {isDelivered && (
+                {order.status === "READY" && (
+                    <Button className="w-full" onClick={handleAdvance}>
+                        <Truck className="h-4 w-4" />
+                        Start Delivery
+                    </Button>
+                )}
+
+                {order.status === "OUT_FOR_DELIVERY" && (
+                    <div className="space-y-2">
+                        <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-primary" />
+                            Out for delivery
+                        </div>
+                        <Button className="w-full" variant="secondary" onClick={() => router.push("/delivery")}> 
+                            <Truck className="h-4 w-4" />
+                            View in Delivery
+                        </Button>
+                    </div>
+                )}
+
+                {order.status === "DELIVERED" && (
                     <div className="flex items-center justify-center gap-1.5 text-sm text-green-600 font-medium py-2">
                         <CheckCircle2 className="h-4 w-4" />
                         Delivered

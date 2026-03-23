@@ -50,7 +50,7 @@ export async function getDeliveryOrders(): Promise<{
             .select(
                 "id, order_number, customer_name, customer_phone, total_amount, status, delivery_started_at, estimated_delivery_time, otp_verified, created_at"
             )
-            .in("status", ["READY", "OUT_FOR_DELIVERY"])
+            .in("status", ["READY", "OUT_FOR_DELIVERY", "ready", "out_for_delivery"])
             .order("created_at", { ascending: false });
 
         if (error) {

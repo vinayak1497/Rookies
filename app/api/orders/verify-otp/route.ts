@@ -32,6 +32,11 @@ export async function POST(request: Request) {
         return buildError("Order not found", 404);
     }
 
+    const status = (order.status as string | null)?.toUpperCase();
+    if (status !== "OUT_FOR_DELIVERY") {
+        return buildError("Order is not out for delivery", 400);
+    }
+
     if (!order.otp || order.otp !== otp) {
         return buildError("Incorrect OTP", 400);
     }

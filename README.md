@@ -103,7 +103,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # ─── Database (Prisma) ───
-DATABASE_URL=your-database-connection-string
+DATABASE_URL=postgresql://<user>:<password>@<project>.pooler.supabase.com:6543/postgres
 
 # ─── App ───
 NEXT_PUBLIC_APP_URL=http://localhost:3000
