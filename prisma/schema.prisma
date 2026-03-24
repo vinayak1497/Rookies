@@ -11,14 +11,7 @@ datasource db {
 
 // ─── Enums ───
 
-enum OrderStatus {
-  PLACED
-  CONFIRMED
-  PREPARING
-  READY
-  OUT_FOR_DELIVERY
-  DELIVERED
-}
+// Note: order status stored as text in DB; keep as string in model
 
 // ─── Multi-Tenant Core ───
 
@@ -80,27 +73,22 @@ model BusinessMember {
 
 model Order {
   id                      String   @id @default(uuid())
-  businessId              String   @map("business_id")
-  customerId              String?  @map("customer_id")
-  orderNumber             String   @map("order_number")
+  business_id             String?
+  customer_name           String?
+  customer_phone          String?
+  items                   Json?
+  total_amount            Decimal  @db.Decimal(10, 2)
+  delivery_time           DateTime?
+  note                    String?
+  source                  String?
   status                  String   @default("PLACED")
-  totalAmount             Decimal  @map("total_amount") @db.Decimal(10, 2)
-  notes                   String?
-  source                  String?  // "whatsapp", "instagram", "walk_in", "phone"
-  deliveryDate            DateTime? @map("delivery_date")
   delivery_started_at     DateTime?
   estimated_delivery_time DateTime?
   otp                     String?
   otp_verified            Boolean  @default(false)
-  createdAt               DateTime @default(now()) @map("created_at")
-  updatedAt               DateTime @updatedAt @map("updated_at")
+  created_at              DateTime @default(now())
 
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer Customer? @relation(fields: [customerId], references: [id])
-  payments Payment[]
-
-  @@index([businessId, status])
-  @@index([businessId, createdAt])
+  @@index([status])
   @@map("orders")
 }
 

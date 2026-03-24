@@ -8,13 +8,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { OrderStatus } from "@/types/database";
 
-// ─── Types for the Supabase joined query ───
-
-interface OrderCustomer {
-    name: string;
-    phone: string | null;
-}
-
 interface OrderPayment {
     status: string;
     amount: number;
@@ -29,7 +22,8 @@ interface OrderRow {
     source: string | null;
     delivery_date: string | null;
     created_at: string;
-    customer: OrderCustomer | null;
+    customer_name: string | null;
+    customer_phone: string | null;
     payments: OrderPayment[];
 }
 
@@ -212,15 +206,15 @@ function OrderCard({ order }: { order: OrderRow }) {
                 </div>
 
                 {/* Customer */}
-                {order.customer && (
+                {order.customer_name && (
                     <div className="space-y-0.5">
                         <p className="text-sm font-semibold text-foreground">
-                            {order.customer.name}
+                            {order.customer_name}
                         </p>
-                        {order.customer.phone && (
+                        {order.customer_phone && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
-                                {order.customer.phone}
+                                {order.customer_phone}
                             </p>
                         )}
                     </div>

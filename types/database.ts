@@ -7,7 +7,6 @@ export type BusinessType = "home_baker" | "kirana" | "instagram_brand" | "other"
 
 export type OrderStatus =
     | "PLACED"
-    | "CONFIRMED"
     | "PREPARING"
     | "READY"
     | "OUT_FOR_DELIVERY"
@@ -54,20 +53,20 @@ export interface BusinessMember {
 
 export interface Order {
     id: string;
-    businessId: string;
-    customerId: string | null;
-    orderNumber: string;
-    status: OrderStatus;
-    totalAmount: number;
-    notes: string | null;
+    business_id: string | null;
+    customer_name: string | null;
+    customer_phone: string | null;
+    items: unknown;
+    total_amount: number;
+    note: string | null;
     source: OrderSource | null;
-    deliveryDate: string | null;
-    deliveryStartedAt?: string | null;
-    estimatedDeliveryTime?: string | null;
+    status: OrderStatus;
+    delivery_time: string | null;
+    delivery_started_at?: string | null;
+    estimated_delivery_time?: string | null;
     otp?: string | null;
-    otpVerified?: boolean;
-    createdAt: string;
-    updatedAt: string;
+    otp_verified?: boolean;
+    created_at: string;
 }
 
 // ─── Customer ───

@@ -7,7 +7,7 @@ const schema = z.object({
 });
 
 function buildError(message: string, status = 400) {
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ success: false, error: message }, { status });
 }
 
 export async function POST(request: Request) {

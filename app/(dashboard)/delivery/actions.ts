@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 
 export type DeliveryStatus =
     | "PLACED"
-    | "CONFIRMED"
     | "PREPARING"
     | "READY"
     | "OUT_FOR_DELIVERY"
@@ -51,35 +50,34 @@ export async function getDeliveryOrders(): Promise<{
                     in: ["READY", "OUT_FOR_DELIVERY"],
                 },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: { created_at: "desc" },
             select: {
                 id: true,
-                orderNumber: true,
-                customerName: true,
-                customerPhone: true,
-                totalAmount: true,
+                customer_name: true,
+                customer_phone: true,
+                total_amount: true,
                 status: true,
                 delivery_started_at: true,
                 estimated_delivery_time: true,
                 otp_verified: true,
-                createdAt: true,
+                created_at: true,
             },
         });
 
         const orders: DeliveryOrder[] = data.map((row) => ({
             id: row.id,
-            orderNumber: row.orderNumber ?? row.id.slice(0, 8).toUpperCase(),
-            customerName: row.customerName ?? "Walk-in customer",
-            customerPhone: row.customerPhone ?? null,
-            totalAmount: Number(row.totalAmount) || 0,
+            orderNumber: row.id.slice(0, 8).toUpperCase(),
+            customerName: row.customer_name ?? "Walk-in customer",
+            customerPhone: row.customer_phone ?? null,
+            totalAmount: Number(row.total_amount) || 0,
             status: normalizeStatus(row.status),
             deliveryStartedAt: row.delivery_started_at,
             estimatedDeliveryTime: row.estimated_delivery_time,
             otpVerified: Boolean(row.otp_verified),
             createdAt:
-                row.createdAt instanceof Date
-                    ? row.createdAt.toISOString()
-                    : String(row.createdAt ?? ""),
+                row.created_at instanceof Date
+                    ? row.created_at.toISOString()
+                    : String(row.created_at ?? ""),
         }));
 
         return { orders };

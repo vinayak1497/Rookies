@@ -6,7 +6,6 @@ const schema = z.object({
     orderId: z.string().min(1),
     nextStatus: z.enum([
         "PLACED",
-        "CONFIRMED",
         "PREPARING",
         "READY",
         "OUT_FOR_DELIVERY",
@@ -17,7 +16,6 @@ const schema = z.object({
 // Forward-only transitions
 const allowedTransitions: Record<string, string[]> = {
     PLACED: ["PREPARING"],
-    CONFIRMED: ["PREPARING"],
     PREPARING: ["READY"],
     READY: ["OUT_FOR_DELIVERY"],
     OUT_FOR_DELIVERY: ["DELIVERED"],
