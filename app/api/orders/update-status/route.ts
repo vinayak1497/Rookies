@@ -14,8 +14,9 @@ const schema = z.object({
     ]),
 });
 
+// Forward-only transitions
 const allowedTransitions: Record<string, string[]> = {
-    PLACED: ["CONFIRMED", "PREPARING"],
+    PLACED: ["PREPARING"],
     CONFIRMED: ["PREPARING"],
     PREPARING: ["READY"],
     READY: ["OUT_FOR_DELIVERY"],
@@ -46,7 +47,16 @@ export async function POST(request: Request) {
         return buildError("Order not found", 404);
     }
 
-    const current = (order.status as string | null)?.toUpperCase() ?? "PLACED";
+    const rawCurrent = (order.status as string | null)?.toUpperCase() ?? "PLACED";
+    const current = allowedTransitions[rawCurrent] ? rawCurrent : "PLACED";
+    if (current !== rawCurrent) {
+        console.warn("[orders/update-status] Unknown status fallback", {
+            orderId,
+            rawCurrent,
+            fallback: current,
+        });
+    }
+
     const allowedNext = allowedTransitions[current] ?? [];
 
     console.log({ currentStatus: current, nextStatus });

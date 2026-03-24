@@ -27,7 +27,6 @@ function normalizeStatus(status: string | null): DeliveryStatus {
     const upper = (status ?? "PLACED").toUpperCase();
     if (
         upper === "PLACED" ||
-        upper === "CONFIRMED" ||
         upper === "PREPARING" ||
         upper === "READY" ||
         upper === "OUT_FOR_DELIVERY" ||
@@ -35,6 +34,7 @@ function normalizeStatus(status: string | null): DeliveryStatus {
     ) {
         return upper;
     }
+    console.warn("[delivery] Unknown status fallback", { status, fallback: "PLACED" });
     return "PLACED";
 }
 

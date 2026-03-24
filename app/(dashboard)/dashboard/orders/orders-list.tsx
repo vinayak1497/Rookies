@@ -131,8 +131,6 @@ function nextStatusFor(status: OrderStatus): OrderStatus | null {
     switch (status) {
         case "PLACED":
             return "PREPARING";
-        case "CONFIRMED":
-            return "PREPARING";
         case "PREPARING":
             return "READY";
         case "READY":
