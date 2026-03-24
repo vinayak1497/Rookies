@@ -48,11 +48,13 @@ export async function POST(request: Request) {
     }
 
     const rawCurrent = (order.status as string | null)?.toUpperCase() ?? "PLACED";
-    const current = allowedTransitions[rawCurrent] ? rawCurrent : "PLACED";
-    if (current !== rawCurrent) {
+    const normalizedCurrent = rawCurrent === "COMPLETED" ? "DELIVERED" : rawCurrent;
+    const current = allowedTransitions[normalizedCurrent] ? normalizedCurrent : "PLACED";
+    if (current !== normalizedCurrent) {
         console.warn("[orders/update-status] Unknown status fallback", {
             orderId,
             rawCurrent,
+            normalizedCurrent,
             fallback: current,
         });
     }

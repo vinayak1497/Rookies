@@ -1,6 +1,6 @@
 "use server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { prisma } from "@/lib/prisma";
 
 export type DeliveryStatus =
     | "PLACED"
@@ -25,6 +25,8 @@ export interface DeliveryOrder {
 
 function normalizeStatus(status: string | null): DeliveryStatus {
     const upper = (status ?? "PLACED").toUpperCase();
+    if (upper === "COMPLETED") return "DELIVERED";
+    if (upper === "PENDING") return "PLACED";
     if (
         upper === "PLACED" ||
         upper === "PREPARING" ||
@@ -43,35 +45,46 @@ export async function getDeliveryOrders(): Promise<{
     error?: string;
 }> {
     try {
-        const supabase = getSupabaseAdmin();
+        const data = await prisma.order.findMany({
+            where: {
+                status: {
+                    in: ["READY", "OUT_FOR_DELIVERY"],
+                },
+            },
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                orderNumber: true,
+                customerName: true,
+                customerPhone: true,
+                totalAmount: true,
+                status: true,
+                deliveryStartedAt: true,
+                estimatedDeliveryTime: true,
+                otpVerified: true,
+                createdAt: true,
+            },
+        });
 
-        const { data, error } = await supabase
-            .from("orders")
-            .select(
-                "id, order_number, customer_name, customer_phone, total_amount, status, delivery_started_at, estimated_delivery_time, otp_verified, created_at"
-            )
-            .in("status", ["READY", "OUT_FOR_DELIVERY"])
-            .order("created_at", { ascending: false });
-
-        if (error) {
-            return { orders: [], error: "Failed to load delivery orders" };
-        }
-
-        const orders: DeliveryOrder[] = (data ?? []).map((row) => ({
+        const orders: DeliveryOrder[] = data.map((row) => ({
             id: row.id,
-            orderNumber: row.order_number ?? row.id.slice(0, 8).toUpperCase(),
-            customerName: row.customer_name ?? "Walk-in customer",
-            customerPhone: row.customer_phone ?? null,
-            totalAmount: Number(row.total_amount) || 0,
+            orderNumber: row.orderNumber ?? row.id.slice(0, 8).toUpperCase(),
+            customerName: row.customerName ?? "Walk-in customer",
+            customerPhone: row.customerPhone ?? null,
+            totalAmount: Number(row.totalAmount) || 0,
             status: normalizeStatus(row.status),
-            deliveryStartedAt: row.delivery_started_at,
-            estimatedDeliveryTime: row.estimated_delivery_time,
-            otpVerified: Boolean(row.otp_verified),
-            createdAt: row.created_at,
+            deliveryStartedAt: row.deliveryStartedAt,
+            estimatedDeliveryTime: row.estimatedDeliveryTime,
+            otpVerified: Boolean(row.otpVerified),
+            createdAt:
+                row.createdAt instanceof Date
+                    ? row.createdAt.toISOString()
+                    : String(row.createdAt ?? ""),
         }));
 
         return { orders };
-    } catch (_err) {
+    } catch (error) {
+        console.error("[delivery] Delivery fetch error", error);
         return { orders: [], error: "Failed to load delivery orders" };
     }
 }

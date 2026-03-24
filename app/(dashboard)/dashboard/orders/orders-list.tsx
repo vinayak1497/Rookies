@@ -152,7 +152,25 @@ function OrderCard({ order }: { order: OrderRow }) {
 
     async function handleAdvance() {
         if (order.status === "READY") {
-            router.push("/delivery");
+            setLoading(true);
+            try {
+                const res = await fetch("/api/orders/start-delivery", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderId: order.id }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    toast.error(data?.error ?? "Failed to start delivery");
+                } else {
+                    toast.success("Delivery started");
+                    router.push("/delivery");
+                }
+            } catch (_err) {
+                toast.error("Unable to start delivery");
+            } finally {
+                setLoading(false);
+            }
             return;
         }
 
