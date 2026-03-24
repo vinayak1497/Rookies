@@ -43,10 +43,10 @@ export async function POST(request: Request) {
             where: { id: orderId },
             data: {
                 status: "OUT_FOR_DELIVERY",
-                deliveryStartedAt: now,
-                estimatedDeliveryTime: eta,
+                delivery_started_at: now,
+                estimated_delivery_time: eta,
                 otp,
-                otpVerified: false,
+                otp_verified: false,
             },
         });
 

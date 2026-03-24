@@ -59,9 +59,9 @@ export async function getDeliveryOrders(): Promise<{
                 customerPhone: true,
                 totalAmount: true,
                 status: true,
-                deliveryStartedAt: true,
-                estimatedDeliveryTime: true,
-                otpVerified: true,
+                delivery_started_at: true,
+                estimated_delivery_time: true,
+                otp_verified: true,
                 createdAt: true,
             },
         });
@@ -73,9 +73,9 @@ export async function getDeliveryOrders(): Promise<{
             customerPhone: row.customerPhone ?? null,
             totalAmount: Number(row.totalAmount) || 0,
             status: normalizeStatus(row.status),
-            deliveryStartedAt: row.deliveryStartedAt,
-            estimatedDeliveryTime: row.estimatedDeliveryTime,
-            otpVerified: Boolean(row.otpVerified),
+            deliveryStartedAt: row.delivery_started_at,
+            estimatedDeliveryTime: row.estimated_delivery_time,
+            otpVerified: Boolean(row.otp_verified),
             createdAt:
                 row.createdAt instanceof Date
                     ? row.createdAt.toISOString()
