@@ -270,7 +270,7 @@ function OrderCard({ order }: { order: OrderRow }) {
                 )}
 
                 {order.status === "READY" && (
-                    <Button className="w-full" onClick={handleAdvance}>
+                    <Button className="w-full" onClick={handleAdvance} isLoading={loading}>
                         <Truck className="h-4 w-4" />
                         Start Delivery
                     </Button>
