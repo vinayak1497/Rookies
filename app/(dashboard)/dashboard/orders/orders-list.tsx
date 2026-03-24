@@ -130,7 +130,7 @@ function SourceBadge({ source }: { source: string | null }) {
 function nextStatusFor(status: OrderStatus): OrderStatus | null {
     switch (status) {
         case "PLACED":
-            return "CONFIRMED";
+            return "PREPARING";
         case "CONFIRMED":
             return "PREPARING";
         case "PREPARING":
@@ -249,9 +249,7 @@ function OrderCard({ order }: { order: OrderRow }) {
                 {order.status !== "DELIVERED" && nextStatus && order.status !== "READY" && (
                     <Button className="w-full" onClick={handleAdvance} isLoading={loading}>
                         <CheckCircle2 className="h-4 w-4" />
-                        {order.status === "PREPARING"
-                            ? "Mark Ready"
-                            : "Start Preparing"}
+                        {order.status === "PREPARING" ? "Mark Ready" : "Start Preparing"}
                     </Button>
                 )}
 

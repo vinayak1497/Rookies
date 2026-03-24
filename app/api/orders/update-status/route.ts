@@ -14,12 +14,12 @@ const schema = z.object({
     ]),
 });
 
-const transitions: Record<string, string> = {
-    PLACED: "CONFIRMED",
-    CONFIRMED: "PREPARING",
-    PREPARING: "READY",
-    READY: "OUT_FOR_DELIVERY",
-    OUT_FOR_DELIVERY: "DELIVERED",
+const allowedTransitions: Record<string, string[]> = {
+    PLACED: ["CONFIRMED", "PREPARING"],
+    CONFIRMED: ["PREPARING"],
+    PREPARING: ["READY"],
+    READY: ["OUT_FOR_DELIVERY"],
+    OUT_FOR_DELIVERY: ["DELIVERED"],
 };
 
 function buildError(message: string, status = 400) {
@@ -47,10 +47,15 @@ export async function POST(request: Request) {
     }
 
     const current = (order.status as string | null)?.toUpperCase() ?? "PLACED";
-    const allowedNext = transitions[current];
+    const allowedNext = allowedTransitions[current] ?? [];
 
-    if (!allowedNext || allowedNext !== nextStatus) {
-        return buildError("Invalid status transition", 400);
+    console.log({ currentStatus: current, nextStatus });
+
+    if (!allowedNext.includes(nextStatus)) {
+        return buildError(
+            `Invalid status transition from ${current} to ${nextStatus}`,
+            400
+        );
     }
 
     const { error: updateError } = await supabase
