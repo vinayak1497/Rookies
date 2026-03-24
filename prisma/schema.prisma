@@ -74,6 +74,7 @@ model BusinessMember {
 model Order {
   id                      String   @id @default(uuid())
   business_id             String?
+  customer_id             String?
   customer_name           String?
   customer_phone          String?
   items                   Json?
@@ -88,6 +89,12 @@ model Order {
   otp_verified            Boolean  @default(false)
   created_at              DateTime @default(now())
 
+  business Business? @relation(fields: [business_id], references: [id], onDelete: SetNull)
+  customer Customer? @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  payments Payment[]
+
+  @@index([business_id])
+  @@index([customer_id])
   @@index([status])
   @@map("orders")
 }
