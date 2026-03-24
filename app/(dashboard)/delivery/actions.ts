@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export type DeliveryStatus =
     | "PLACED"
@@ -44,25 +44,25 @@ export async function getDeliveryOrders(): Promise<{
     error?: string;
 }> {
     try {
-        const data = await prisma.order.findMany({
-            where: {
-                status: {
-                    in: ["READY", "OUT_FOR_DELIVERY"],
-                },
-            },
-            orderBy: { created_at: "desc" },
-            select: {
-                id: true,
-                customer_name: true,
-                customer_phone: true,
-                total_amount: true,
-                status: true,
-                delivery_started_at: true,
-                estimated_delivery_time: true,
-                otp_verified: true,
-                created_at: true,
-            },
-        });
+        const supabase = getSupabaseAdmin();
+        const { data, error } = await supabase
+            .from("orders")
+            .select(
+                "id, customer_name, customer_phone, total_amount, status, delivery_started_at, estimated_delivery_time, otp_verified, created_at"
+            )
+            .in("status", ["READY", "OUT_FOR_DELIVERY"])
+            .order("created_at", { ascending: false });
+
+        if (error || !data) {
+            console.error("[delivery] supabase fetch error", error);
+            return { orders: [], error: "Failed to load delivery orders" };
+        }
+
+        const safeToIso = (value: string | null): string | null => {
+            if (!value) return null;
+            const date = new Date(value);
+            return isNaN(date.getTime()) ? null : date.toISOString();
+        };
 
         const orders: DeliveryOrder[] = data.map((row) => ({
             id: row.id,
@@ -71,13 +71,12 @@ export async function getDeliveryOrders(): Promise<{
             customerPhone: row.customer_phone ?? null,
             totalAmount: Number(row.total_amount) || 0,
             status: normalizeStatus(row.status),
-            deliveryStartedAt: row.delivery_started_at,
-            estimatedDeliveryTime: row.estimated_delivery_time,
+            deliveryStartedAt: safeToIso((row as { delivery_started_at?: string | null }).delivery_started_at ?? null),
+            estimatedDeliveryTime: safeToIso((row as { estimated_delivery_time?: string | null }).estimated_delivery_time ?? null),
             otpVerified: Boolean(row.otp_verified),
             createdAt:
-                row.created_at instanceof Date
-                    ? row.created_at.toISOString()
-                    : String(row.created_at ?? ""),
+                safeToIso((row as { created_at?: string | null }).created_at ?? null) ??
+                (row as { created_at?: string | null }).created_at ?? "",
         }));
 
         return { orders };
