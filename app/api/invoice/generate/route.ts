@@ -10,7 +10,6 @@ import {
     formatOrderStatus,
     type InvoiceLineItem,
 } from "@/lib/invoice";
-import { formatINR } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
@@ -35,6 +34,10 @@ function buildError(message: string, status = 400) {
     return NextResponse.json({ success: false, error: message }, { status });
 }
 
+/**
+ * Strip non-ASCII characters from text to avoid pdf-lib encoding errors.
+ * Replaces ₹ with "INR " so the symbol renders properly.
+ */
 function safePdfText(value: string): string {
     return value
         .replace(/₹/g, "INR ")
@@ -43,12 +46,19 @@ function safePdfText(value: string): string {
         .trim();
 }
 
+/** Format a number as INR without the ₹ symbol (ASCII-safe for pdf-lib). */
+function pdfINR(amount: number): string {
+    return `INR ${amount.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+// ─── PDF Generation ───
+
 async function generateInvoicePdfBuffer(
     order: InvoiceOrderRow,
     items: InvoiceLineItem[]
 ): Promise<Buffer> {
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]);
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4
     const { width, height } = page.getSize();
 
     const margin = 48;
@@ -61,9 +71,12 @@ async function generateInvoicePdfBuffer(
     const muted = rgb(0.45, 0.45, 0.45);
     const line = rgb(0.87, 0.87, 0.87);
 
+    const contentWidth = width - margin * 2;
+
+    // ── Header ──
     page.drawText(safePdfText("Rookies"), { x: margin, y: cursorY, size: 18, font: bold, color: dark });
     page.drawText(safePdfText("Invoice"), {
-        x: width - margin - 64,
+        x: width - margin - bold.widthOfTextAtSize("Invoice", 18),
         y: cursorY,
         size: 18,
         font: bold,
@@ -72,138 +85,113 @@ async function generateInvoicePdfBuffer(
 
     cursorY -= 26;
 
+    // ── Order info ──
     const issuedAt = formatInvoiceDate(order.invoice_created_at ?? order.created_at ?? null);
     page.drawText(safePdfText(`Order #${formatOrderNumber(order.id)}`), {
-        x: margin,
-        y: cursorY,
-        size: 11,
-        font: bold,
-        color: dark,
+        x: margin, y: cursorY, size: 11, font: bold, color: dark,
     });
-    page.drawText(safePdfText(`Issued: ${issuedAt}`), {
-        x: width - margin - 200,
-        y: cursorY,
-        size: 10,
-        font,
-        color: muted,
+    const issuedText = safePdfText(`Issued: ${issuedAt}`);
+    page.drawText(issuedText, {
+        x: width - margin - font.widthOfTextAtSize(issuedText, 10),
+        y: cursorY, size: 10, font, color: muted,
     });
 
     cursorY -= 16;
 
+    // ── Customer + Status ──
     const status = formatOrderStatus((order.status ?? "PLACED").toUpperCase());
     const customerName = order.customer_name ?? "Walk-in customer";
     const customerPhone = order.customer_phone ?? "Phone not shared";
 
     page.drawText(safePdfText(`Customer: ${customerName}`), {
-        x: margin,
-        y: cursorY,
-        size: 10,
-        font,
-        color: muted,
+        x: margin, y: cursorY, size: 10, font, color: muted,
     });
-    page.drawText(safePdfText(`Status: ${status}`), {
-        x: width - margin - 200,
-        y: cursorY,
-        size: 10,
-        font,
-        color: muted,
+    const statusText = safePdfText(`Status: ${status}`);
+    page.drawText(statusText, {
+        x: width - margin - font.widthOfTextAtSize(statusText, 10),
+        y: cursorY, size: 10, font, color: muted,
     });
 
     cursorY -= 14;
 
     page.drawText(safePdfText(`Phone: ${customerPhone}`), {
-        x: margin,
-        y: cursorY,
-        size: 10,
-        font,
-        color: muted,
+        x: margin, y: cursorY, size: 10, font, color: muted,
     });
 
     cursorY -= 20;
 
-    page.drawLine({
-        start: { x: margin, y: cursorY },
-        end: { x: width - margin, y: cursorY },
-        thickness: 1,
-        color: line,
-    });
-
+    // ── Divider ──
+    page.drawLine({ start: { x: margin, y: cursorY }, end: { x: width - margin, y: cursorY }, thickness: 1, color: line });
     cursorY -= 14;
 
-    page.drawText(safePdfText("Item"), { x: margin, y: cursorY, size: 10, font: bold, color: muted });
-    page.drawText(safePdfText("Qty"), {
-        x: width - margin - 30,
-        y: cursorY,
-        size: 10,
-        font: bold,
-        color: muted,
-    });
+    // ── Table Header: Item | Qty | Price | Total ──
+    const colItem = margin;
+    const colQty = margin + contentWidth * 0.55;
+    const colPrice = margin + contentWidth * 0.70;
+    const colTotal = margin + contentWidth * 0.88;
+
+    page.drawText("Item", { x: colItem, y: cursorY, size: 10, font: bold, color: muted });
+    page.drawText("Qty", { x: colQty, y: cursorY, size: 10, font: bold, color: muted });
+    page.drawText("Price", { x: colPrice, y: cursorY, size: 10, font: bold, color: muted });
+    page.drawText("Total", { x: colTotal, y: cursorY, size: 10, font: bold, color: muted });
 
     cursorY -= 10;
 
-    page.drawLine({
-        start: { x: margin, y: cursorY },
-        end: { x: width - margin, y: cursorY },
-        thickness: 1,
-        color: line,
-    });
-
+    page.drawLine({ start: { x: margin, y: cursorY }, end: { x: width - margin, y: cursorY }, thickness: 1, color: line });
     cursorY -= 14;
 
+    // ── Table Rows ──
     if (items.length === 0) {
         page.drawText(safePdfText("No item details available."), {
-            x: margin,
-            y: cursorY,
-            size: 10,
-            font,
-            color: muted,
+            x: margin, y: cursorY, size: 10, font, color: muted,
         });
         cursorY -= 16;
     } else {
-        items.forEach((item) => {
-            if (cursorY < margin + 80) return;
-            page.drawText(safePdfText(item.name), { x: margin, y: cursorY, size: 10, font, color: dark });
-            page.drawText(safePdfText(String(item.quantity)), {
-                x: width - margin - 30,
-                y: cursorY,
-                size: 10,
-                font,
-                color: muted,
-            });
-            cursorY -= 16;
-        });
+        for (const item of items) {
+            if (cursorY < margin + 80) break; // page overflow safety
+
+            const lineTotal = item.price * item.quantity;
+
+            page.drawText(safePdfText(item.name), { x: colItem, y: cursorY, size: 10, font, color: dark });
+            page.drawText(String(item.quantity), { x: colQty, y: cursorY, size: 10, font, color: muted });
+
+            if (item.price > 0) {
+                page.drawText(safePdfText(pdfINR(item.price)), { x: colPrice, y: cursorY, size: 10, font, color: muted });
+                page.drawText(safePdfText(pdfINR(lineTotal)), { x: colTotal, y: cursorY, size: 10, font, color: dark });
+            } else {
+                page.drawText("-", { x: colPrice, y: cursorY, size: 10, font, color: muted });
+                page.drawText("-", { x: colTotal, y: cursorY, size: 10, font, color: muted });
+            }
+
+            cursorY -= 18;
+        }
     }
 
     cursorY -= 6;
 
-    page.drawLine({
-        start: { x: margin, y: cursorY },
-        end: { x: width - margin, y: cursorY },
-        thickness: 1,
-        color: line,
+    // ── Total line ──
+    page.drawLine({ start: { x: margin, y: cursorY }, end: { x: width - margin, y: cursorY }, thickness: 1, color: line });
+    cursorY -= 20;
+
+    const totalStr = safePdfText(pdfINR(Number(order.total_amount) || 0));
+    page.drawText("Total", {
+        x: colPrice, y: cursorY, size: 12, font: bold, color: dark,
+    });
+    page.drawText(totalStr, {
+        x: colTotal, y: cursorY, size: 12, font: bold, color: dark,
     });
 
-    cursorY -= 18;
-
-    const total = safePdfText(formatINR(Number(order.total_amount) || 0));
-    page.drawText(safePdfText("Total"), {
-        x: width - margin - 140,
-        y: cursorY,
-        size: 12,
-        font: bold,
-        color: dark,
-    });
-    page.drawText(total, {
-        x: width - margin - 60,
-        y: cursorY,
-        size: 12,
-        font: bold,
-        color: dark,
+    // ── Footer ──
+    cursorY -= 40;
+    page.drawText(safePdfText("Thank you for your order!"), {
+        x: margin, y: cursorY, size: 9, font, color: muted,
     });
 
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
 }
+
+// ─── Route Handler ───
 
 export async function POST(request: Request) {
     try {
@@ -216,6 +204,7 @@ export async function POST(request: Request) {
         const { orderId } = parsed.data;
         const supabase = getSupabaseAdmin();
 
+        // ── 1. Fetch the order ──
         const baseSelect =
             "id, customer_name, customer_phone, items, total_amount, status, created_at, note";
         const invoiceSelect = `${baseSelect}, invoice_url, invoice_created_at`;
@@ -250,21 +239,32 @@ export async function POST(request: Request) {
 
         const typedOrder = order as InvoiceOrderRow;
 
+        // ── 2. If invoice already exists, return it ──
         if (typedOrder.invoice_url) {
             return NextResponse.json({ success: true, invoice_url: typedOrder.invoice_url });
         }
 
+        // ── 3. Validate order status ──
         const status = (typedOrder.status ?? "PLACED").toUpperCase();
         if (status !== "READY") {
             return buildError("Invoice can only be created for READY orders", 400);
         }
 
+        // ── 4. Build items & generate PDF ──
         const items = buildInvoiceItems(typedOrder.items, typedOrder.note ?? null);
         const pdfBuffer = await generateInvoicePdfBuffer(typedOrder, items);
 
+        // ── 5. Upload to S3 ──
         const fileName = `invoices/${typedOrder.id}-${Date.now()}.pdf`;
-        const invoiceUrl = await uploadToS3(pdfBuffer, fileName, "application/pdf");
+        let invoiceUrl: string;
+        try {
+            invoiceUrl = await uploadToS3(pdfBuffer, fileName, "application/pdf");
+        } catch (s3Error) {
+            console.error("[invoice] S3 upload error", s3Error);
+            return buildError("Failed to upload invoice to storage", 500);
+        }
 
+        // ── 6. Save URL to database ──
         const invoiceCreatedAt = new Date().toISOString();
         const { error: updateError } = await supabase
             .from("orders")
@@ -275,13 +275,17 @@ export async function POST(request: Request) {
             .eq("id", typedOrder.id);
 
         if (updateError) {
-            console.error("[invoice] update error", updateError);
+            console.error("[invoice] DB update error", updateError);
             if (updateError.code === "42703") {
-                return buildError("Invoice fields are missing. Run the DB migration.", 500);
+                return buildError(
+                    "Invoice columns missing in orders table. Run migration: ALTER TABLE orders ADD COLUMN invoice_url text, ADD COLUMN invoice_created_at timestamptz;",
+                    500
+                );
             }
-            return buildError("Failed to save invoice", 500);
+            return buildError("Failed to save invoice URL", 500);
         }
 
+        // ── 7. Return URL to frontend ──
         return NextResponse.json({ success: true, invoice_url: invoiceUrl });
     } catch (error) {
         console.error("[invoice] generate error", error);

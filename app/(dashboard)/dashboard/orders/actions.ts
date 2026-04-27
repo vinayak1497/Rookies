@@ -41,7 +41,11 @@ export async function getOrdersForUser() {
                 .select(baseSelect)
                 .or("status.is.null,status.not.ilike.%out%for%delivery%")
                 .order("created_at", { ascending: false });
-            orders = fallback.data;
+            orders = fallback.data?.map((o) => ({
+                ...o,
+                invoice_url: null as string | null,
+                invoice_created_at: null as string | null,
+            })) ?? null;
             error = fallback.error;
         }
 

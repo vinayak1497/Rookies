@@ -64,20 +64,21 @@ function formatDate(dateStr: string): string {
 }
 
 /** Try to parse items from the notes field (JSON array or plain text). */
-function parseItems(notes: string | null): { name: string; quantity: number }[] {
+function parseItems(notes: string | null): { name: string; quantity: number; price: number }[] {
     if (!notes) return [];
     try {
         const parsed = JSON.parse(notes);
         if (Array.isArray(parsed)) {
-            return parsed.map((item: { name?: string; quantity?: number; qty?: number }) => ({
+            return parsed.map((item: { name?: string; quantity?: number; qty?: number; price?: number }) => ({
                 name: item.name ?? "Item",
                 quantity: item.quantity ?? item.qty ?? 1,
+                price: Number(item.price ?? 0),
             }));
         }
     } catch {
         // Not JSON — return as single line item
     }
-    return [{ name: notes, quantity: 1 }];
+    return [{ name: notes, quantity: 1, price: 0 }];
 }
 
 function isPaid(payments: OrderPayment[]): boolean {
@@ -188,11 +189,15 @@ function OrderCard({ order }: { order: OrderRow }) {
     }
 
     function handleViewInvoice() {
-        if (!order.id) {
-            toast.error("Order ID is missing");
-            return;
+        if (invoiceUrl) {
+            // Open the S3 PDF directly in a new tab
+            window.open(invoiceUrl, "_blank", "noopener,noreferrer");
+        } else if (order.id) {
+            // Fallback: navigate to internal invoice page
+            router.push(`/dashboard/orders/${order.id}/invoice`);
+        } else {
+            toast.error("No invoice available");
         }
-        router.push(`/dashboard/orders/${order.id}/invoice`);
     }
 
     async function handleAdvance() {
@@ -280,8 +285,12 @@ function OrderCard({ order }: { order: OrderRow }) {
                         <ul className="space-y-0.5">
                             {items.map((item, i) => (
                                 <li key={i} className="text-sm text-foreground flex justify-between">
-                                    <span>{item.name}</span>
-                                    <span className="text-muted-foreground">×{item.quantity}</span>
+                                    <span>{item.name} <span className="text-muted-foreground">×{item.quantity}</span></span>
+                                    {item.price > 0 && (
+                                        <span className="text-muted-foreground font-medium">
+                                            {formatINR(item.price * item.quantity)}
+                                        </span>
+                                    )}
                                 </li>
                             ))}
                         </ul>

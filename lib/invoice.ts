@@ -1,43 +1,53 @@
 export type InvoiceLineItem = {
     name: string;
     quantity: number;
+    price: number;
 };
 
+/**
+ * Safely extract line items from the order's `items` JSONB column.
+ * Handles: null, string (legacy JSON-encoded), proper array.
+ * Falls back to parsing the `note` field if items is empty.
+ */
 export function buildInvoiceItems(items: unknown, note: string | null): InvoiceLineItem[] {
-    if (Array.isArray(items)) {
-        return items.map((item: { name?: string; quantity?: number; qty?: number }) => ({
+    const normalize = (
+        raw: { name?: string; quantity?: number; qty?: number; price?: number; unit_price?: number }[]
+    ): InvoiceLineItem[] =>
+        raw.map((item) => ({
             name: item.name ?? "Item",
             quantity: item.quantity ?? item.qty ?? 1,
+            price: Number(item.price ?? item.unit_price ?? 0),
         }));
+
+    // Case 1: proper array
+    if (Array.isArray(items) && items.length > 0) {
+        return normalize(items);
     }
 
+    // Case 2: JSON-encoded string
     if (typeof items === "string" && items.length > 0) {
         try {
             const parsed = JSON.parse(items);
-            if (Array.isArray(parsed)) {
-                return parsed.map((item: { name?: string; quantity?: number; qty?: number }) => ({
-                    name: item.name ?? "Item",
-                    quantity: item.quantity ?? item.qty ?? 1,
-                }));
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return normalize(parsed);
             }
         } catch {
-            // Ignore invalid JSON.
+            // Not valid JSON — fall through
         }
     }
 
+    // Case 3: fallback to note field
     if (note) {
         try {
             const parsed = JSON.parse(note);
-            if (Array.isArray(parsed)) {
-                return parsed.map((item: { name?: string; quantity?: number; qty?: number }) => ({
-                    name: item.name ?? "Item",
-                    quantity: item.quantity ?? item.qty ?? 1,
-                }));
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return normalize(parsed);
             }
         } catch {
-            return [{ name: note, quantity: 1 }];
+            // note is plain text — treat as single item
+            return [{ name: note, quantity: 1, price: 0 }];
         }
-        return [{ name: note, quantity: 1 }];
+        return [{ name: note, quantity: 1, price: 0 }];
     }
 
     return [];

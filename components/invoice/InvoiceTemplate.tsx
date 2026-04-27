@@ -76,25 +76,43 @@ export function InvoiceTemplate({
                 </div>
             </div>
 
+            {/* ── Items Table ── */}
             <div className="mt-6 rounded-xl border border-border bg-muted/10 p-4">
-                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    <span>Item</span>
-                    <span>Qty</span>
+                <div className="grid grid-cols-12 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="col-span-5">Item</span>
+                    <span className="col-span-2 text-center">Qty</span>
+                    <span className="col-span-2 text-right">Price</span>
+                    <span className="col-span-3 text-right">Total</span>
                 </div>
                 <div className="mt-3 space-y-2">
                     {items.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No item details available.</p>
                     ) : (
-                        items.map((item, index) => (
-                            <div key={`${item.name}-${index}`} className="flex items-center justify-between text-sm">
-                                <span className="text-foreground">{item.name}</span>
-                                <span className="text-muted-foreground">{item.quantity}</span>
-                            </div>
-                        ))
+                        items.map((item, index) => {
+                            const lineTotal = item.price * item.quantity;
+                            return (
+                                <div
+                                    key={`${item.name}-${index}`}
+                                    className="grid grid-cols-12 text-sm"
+                                >
+                                    <span className="col-span-5 text-foreground">{item.name}</span>
+                                    <span className="col-span-2 text-center text-muted-foreground">
+                                        {item.quantity}
+                                    </span>
+                                    <span className="col-span-2 text-right text-muted-foreground">
+                                        {item.price > 0 ? formatINR(item.price) : "-"}
+                                    </span>
+                                    <span className="col-span-3 text-right font-medium text-foreground">
+                                        {lineTotal > 0 ? formatINR(lineTotal) : "-"}
+                                    </span>
+                                </div>
+                            );
+                        })
                     )}
                 </div>
             </div>
 
+            {/* ── Total ── */}
             <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
                 <p className="text-sm text-muted-foreground">Total</p>
                 <p className="text-xl font-semibold text-foreground">{formatINR(totalAmount)}</p>
