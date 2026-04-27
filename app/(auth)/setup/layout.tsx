@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import { DashboardShell } from "./_components/dashboard-shell";
 import { getCurrentBusiness, getCurrentDbUser } from "@/lib/business";
 
-export default async function DashboardLayout({
+export default async function SetupLayout({
     children,
 }: {
     children: React.ReactNode;
@@ -13,9 +12,9 @@ export default async function DashboardLayout({
     }
 
     const business = await getCurrentBusiness();
-    if (!business) {
-        redirect("/setup");
+    if (business) {
+        redirect("/dashboard");
     }
 
-    return <DashboardShell>{children}</DashboardShell>;
+    return children;
 }

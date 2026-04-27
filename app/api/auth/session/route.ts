@@ -25,31 +25,35 @@ export async function POST(request: NextRequest) {
     // Create a Firebase session cookie
     const sessionCookie = await createSessionCookie(idToken, SESSION_EXPIRY_MS);
 
-    // Upsert user record in the database (best-effort — don't block login on DB issues)
-    try {
-      await prisma.user.upsert({
-        where: { firebaseUid: decodedToken.uid },
-        update: {
-          email: decodedToken.email || null,
-          name: decodedToken.name || null,
-          phone: decodedToken.phone_number || null,
-        },
-        create: {
-          firebaseUid: decodedToken.uid,
-          email: decodedToken.email || null,
-          name:
-            decodedToken.name ||
-            decodedToken.email?.split("@")[0] ||
-            null,
-          phone: decodedToken.phone_number || null,
-        },
-      });
-    } catch (dbError) {
-      console.warn("[session] DB sync failed (non-fatal):", dbError);
-    }
+    const user = await prisma.user.upsert({
+      where: { firebaseUid: decodedToken.uid },
+      update: {
+        email: decodedToken.email || null,
+        name: decodedToken.name || null,
+        phone: decodedToken.phone_number || null,
+      },
+      create: {
+        firebaseUid: decodedToken.uid,
+        email: decodedToken.email || null,
+        name:
+          decodedToken.name ||
+          decodedToken.email?.split("@")[0] ||
+          null,
+        phone: decodedToken.phone_number || null,
+      },
+    });
+
+    const membership = await prisma.businessMember.findFirst({
+      where: { userId: user.id, isActive: true },
+      select: { businessId: true },
+    });
 
     // Set session cookie
-    const response = NextResponse.json({ status: "success" });
+    const response = NextResponse.json({
+      status: "success",
+      hasBusiness: Boolean(membership),
+      businessId: membership?.businessId ?? null,
+    });
     response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

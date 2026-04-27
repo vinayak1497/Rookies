@@ -18,6 +18,8 @@
   "settings.language.success": "மொழி வெற்றிகரமாக புதுப்பிக்கப்பட்டது",
   "settings.language.error": "மொழியை புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "dashboard.title": "டாஷ்போர்ட்",
+  "dashboard.greeting": "வணக்கம் {name} 👋",
+  "dashboard.greeting_fallback": "நண்பரே",
   "dashboard.subtitle": "உங்கள் வணிகத்தின் சுருக்கம்.",
   "dashboard.stats.total_orders": "மொத்த ஆர்டர்கள்",
   "dashboard.stats.revenue": "வருமானம்",

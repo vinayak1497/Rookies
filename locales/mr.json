@@ -18,6 +18,8 @@
   "settings.language.success": "भाषा यशस्वीपणे अपडेट झाली",
   "settings.language.error": "भाषा अपडेट करता आली नाही. कृपया पुन्हा प्रयत्न करा.",
   "dashboard.title": "डॅशबोर्ड",
+  "dashboard.greeting": "नमस्कार {name} 👋",
+  "dashboard.greeting_fallback": "मित्र",
   "dashboard.subtitle": "आपल्या व्यवसायाचा झटपट आढावा.",
   "dashboard.stats.total_orders": "एकूण ऑर्डर्स",
   "dashboard.stats.revenue": "उत्पन्न",

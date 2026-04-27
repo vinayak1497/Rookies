@@ -23,8 +23,9 @@ export default function SignUpPage() {
       });
 
       if (!res.ok) throw new Error("Session creation failed");
-      // New users go to business registration
-      router.push("/setup");
+      const data = await res.json();
+      const destination = data?.hasBusiness ? "/dashboard" : "/setup";
+      router.push(destination);
       router.refresh();
     },
     [router]

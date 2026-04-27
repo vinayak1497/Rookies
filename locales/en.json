@@ -18,6 +18,8 @@
   "settings.language.success": "Language updated successfully",
   "settings.language.error": "Unable to update language. Please try again.",
   "dashboard.title": "Dashboard",
+  "dashboard.greeting": "Hello {name} 👋",
+  "dashboard.greeting_fallback": "there",
   "dashboard.subtitle": "Welcome to your business overview.",
   "dashboard.stats.total_orders": "Total Orders",
   "dashboard.stats.revenue": "Revenue",

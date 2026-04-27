@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { getServerTranslations } from "@/lib/i18n/server";
+import { getCurrentDbUser } from "@/lib/business";
 
 export const metadata: Metadata = {
     title: "Dashboard",
@@ -76,6 +77,9 @@ function parseItems(
 
 export default async function DashboardPage() {
     const { t } = await getServerTranslations();
+    const user = await getCurrentDbUser();
+    const firstName = user?.name?.trim().split(" ")[0] || t("dashboard.greeting_fallback");
+    const greeting = t("dashboard.greeting", { name: firstName });
 
     let orderCount = 0;
     let totalRevenue = 0;
@@ -157,7 +161,7 @@ export default async function DashboardPage() {
         <div className="space-y-8">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{greeting}</h1>
                 <p className="text-muted-foreground mt-1">
                     {t("dashboard.subtitle")}
                 </p>

@@ -41,6 +41,7 @@ model Business {
   gstNumber   String?  @map("gst_number")
   logoUrl     String?  @map("logo_url")
   preferredLanguage String @default("en") @map("preferred_language")
+  onboardingData Json? @map("onboarding_data")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

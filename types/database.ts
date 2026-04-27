@@ -34,6 +34,7 @@ export interface Business {
     gstNumber: string | null;
     logoUrl: string | null;
     preferredLanguage: string;
+    onboardingData?: Record<string, unknown> | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;

@@ -7,9 +7,24 @@ export async function getCurrentDbUser() {
     const authUser = await getAuthUser();
     if (!authUser) return null;
 
-    return prisma.user.findUnique({
+    return prisma.user.upsert({
         where: { firebaseUid: authUser.uid },
+        update: {
+            email: authUser.email || null,
+            name: authUser.name || null,
+            phone: authUser.phone_number || null,
+        },
+        create: {
+            firebaseUid: authUser.uid,
+            email: authUser.email || null,
+            name: authUser.name || authUser.email?.split("@")[0] || null,
+            phone: authUser.phone_number || null,
+        },
     });
+}
+
+export async function getCurrentUser() {
+    return getCurrentDbUser();
 }
 
 export async function getCurrentBusinessMember() {

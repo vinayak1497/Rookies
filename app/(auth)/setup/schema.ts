@@ -37,16 +37,12 @@ export const peakSeasons = [
 ] as const;
 
 export const languages = [
-    { value: "english", label: "English" },
-    { value: "hindi", label: "Hindi" },
-    { value: "hinglish", label: "Hinglish" },
-    { value: "tamil", label: "Tamil" },
-    { value: "telugu", label: "Telugu" },
-    { value: "kannada", label: "Kannada" },
-    { value: "malayalam", label: "Malayalam" },
-    { value: "marathi", label: "Marathi" },
-    { value: "bengali", label: "Bengali" },
-    { value: "gujarati", label: "Gujarati" },
+    { value: "en", label: "English" },
+    { value: "hi", label: "हिंदी" },
+    { value: "mr", label: "मराठी" },
+    { value: "gu", label: "ગુજરાતી" },
+    { value: "ta", label: "தமிழ்" },
+    { value: "kn", label: "ಕನ್ನಡ" },
 ] as const;
 
 export const refundPreferences = [

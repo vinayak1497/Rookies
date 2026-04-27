@@ -25,7 +25,9 @@ function SignInContent() {
       });
 
       if (!res.ok) throw new Error("Session creation failed");
-      router.push(next);
+      const data = await res.json();
+      const destination = data?.hasBusiness === false ? "/setup" : next;
+      router.push(destination);
       router.refresh();
     },
     [router, next]
