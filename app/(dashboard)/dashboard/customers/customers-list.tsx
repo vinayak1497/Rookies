@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Phone, ShoppingBag, IndianRupee, Calendar } from "lucide-react";
+import { Users, Phone, ShoppingBag, IndianRupee, Calendar, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomerStats } from "./actions";
 
@@ -53,6 +53,12 @@ function CustomerCard({ customer }: { customer: CustomerStats }) {
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                             <Phone className="h-4 w-4" />
                             {customer.phone}
+                        </p>
+                    )}
+                    {customer.email && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                            <Mail className="h-4 w-4" />
+                            {customer.email}
                         </p>
                     )}
                 </div>

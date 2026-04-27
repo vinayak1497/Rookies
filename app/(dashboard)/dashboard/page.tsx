@@ -116,14 +116,14 @@ export default async function DashboardPage() {
             orderCount = allOrders.length;
             totalRevenue = allOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
             pendingCount = allOrders.filter((o) => o.status === "pending").length;
-            
-            const uniqueCustomers = new Set();
-            allOrders.forEach(o => {
-                const identifier = o.customer_phone || o.customer_name;
-                if (identifier) uniqueCustomers.add(identifier);
-            });
-            customerCount = uniqueCustomers.size || orderCount;
         }
+
+        // Customer count from the customers table (source of truth)
+        const { count } = await supabase
+            .from("customers")
+            .select("id", { count: "exact", head: true });
+
+        customerCount = count ?? 0;
 
         recentOrders = recent ?? [];
     } catch (err) {

@@ -78,12 +78,17 @@ export async function POST(request: NextRequest) {
                 );
             }
 
+            const safeName = (customer_name || "Unknown").trim();
+            const safePhone = customer_phone ? String(customer_phone).trim() : null;
+            const resolvedBusinessId = business_id || "default-business-id";
+
+            // ── Insert the order ──
             const { data: order, error } = await supabase
                 .from("orders")
                 .insert({
-                    business_id: business_id || "default-business-id",
-                    customer_name: customer_name || "Unknown",
-                    customer_phone: customer_phone ? String(customer_phone) : null,
+                    business_id: resolvedBusinessId,
+                    customer_name: safeName,
+                    customer_phone: safePhone,
                     items: items || [],
                     total_amount: total_amount ?? 0,
                     delivery_time: delivery_time || null,
@@ -96,6 +101,31 @@ export async function POST(request: NextRequest) {
             if (error) {
                 console.error("[ORDER ERROR]:", error);
                 return NextResponse.json({ success: false }, { status: 500 });
+            }
+
+            // ── Upsert customer by identity_key ──
+            const identityKey = `${safeName.toLowerCase().replace(/\s+/g, "_")}_${safePhone ?? "no_phone"}`;
+
+            const { data: existingCustomer } = await supabase
+                .from("customers")
+                .select("id")
+                .eq("identity_key", identityKey)
+                .maybeSingle();
+
+            if (!existingCustomer) {
+                const { error: customerError } = await supabase
+                    .from("customers")
+                    .insert({
+                        business_id: resolvedBusinessId,
+                        name: safeName,
+                        phone: safePhone,
+                        identity_key: identityKey,
+                    });
+
+                if (customerError) {
+                    // Log but don't fail the order — customer creation is best-effort
+                    console.warn("[ORDER] Customer upsert failed:", customerError);
+                }
             }
 
             return NextResponse.json({

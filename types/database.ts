@@ -83,6 +83,7 @@ export interface Customer {
     email: string | null;
     address: string | null;
     notes: string | null;
+    identityKey: string;
     createdAt: string;
     updatedAt: string;
 }
