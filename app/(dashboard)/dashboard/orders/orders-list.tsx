@@ -213,7 +213,11 @@ function OrderCard({ order }: { order: OrderRow }) {
                 if (!res.ok) {
                     toast.error(data?.error ?? "Failed to start delivery");
                 } else {
-                    toast.success("Delivery started");
+                    if (data?.otpSent) {
+                        toast.success("Delivery started — OTP sent to customer");
+                    } else {
+                        toast.success("Delivery started");
+                    }
                     router.push("/delivery");
                 }
             } catch (_err) {

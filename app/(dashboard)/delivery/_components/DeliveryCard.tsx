@@ -64,7 +64,11 @@ export function DeliveryCard({ order }: { order: DeliveryOrder }) {
             if (!res.ok) {
                 toast.error(data?.error ?? "Failed to start delivery");
             } else {
-                toast.success("Delivery started");
+                if (data?.otpSent) {
+                    toast.success("Delivery started — OTP sent to customer via WhatsApp");
+                } else {
+                    toast.success("Delivery started — no phone number, OTP not sent");
+                }
                 router.refresh();
             }
         } catch (error) {
