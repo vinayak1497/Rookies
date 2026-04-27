@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerTranslations } from "@/lib/i18n/server";
+import { LANGUAGE_PROMPT_LABELS } from "@/lib/i18n/config";
 
 /**
  * AI Assistant Endpoint
@@ -22,14 +24,24 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const { language, t } = await getServerTranslations();
+        const promptLanguage = LANGUAGE_PROMPT_LABELS[language] ?? "English";
+        const systemPrompt = `Respond in ${promptLanguage}. Use simple, friendly tone.`;
+
         // TODO: Integrate with OpenAI API
-        // const response = await openai.chat.completions.create({ ... });
+        // const response = await openai.chat.completions.create({
+        //   messages: [
+        //     { role: "system", content: systemPrompt },
+        //     { role: "user", content: message },
+        //   ],
+        // });
 
         return NextResponse.json({
             success: true,
             data: {
-                reply:
-                    "🚧 AI Assistant is coming soon! This endpoint will connect to OpenAI to help you manage your business.",
+                reply: t("assistant.coming_soon"),
+                language,
+                system_prompt: systemPrompt,
             },
         });
     } catch (error) {

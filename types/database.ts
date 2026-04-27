@@ -33,6 +33,7 @@ export interface Business {
     pincode: string | null;
     gstNumber: string | null;
     logoUrl: string | null;
+    preferredLanguage: string;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;

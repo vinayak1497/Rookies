@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { DEFAULT_LANGUAGE } from "@/lib/i18n/config";
+import { normalizeLanguage } from "@/lib/i18n/loaders";
 
 /**
  * n8n Webhook Endpoint
@@ -19,6 +21,31 @@ function getSupabaseAdmin() {
     );
 }
 
+async function getPreferredLanguage(
+    supabase: ReturnType<typeof createClient>,
+    businessId?: string | null
+) {
+    if (!businessId) return DEFAULT_LANGUAGE;
+
+    const byId = await supabase
+        .from("businesses")
+        .select("preferred_language")
+        .eq("id", businessId)
+        .maybeSingle();
+
+    if (byId.data?.preferred_language) {
+        return normalizeLanguage(byId.data.preferred_language);
+    }
+
+    const bySlug = await supabase
+        .from("businesses")
+        .select("preferred_language")
+        .eq("slug", businessId)
+        .maybeSingle();
+
+    return normalizeLanguage(bySlug.data?.preferred_language ?? DEFAULT_LANGUAGE);
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -28,6 +55,7 @@ export async function POST(request: NextRequest) {
 
         // 👇 detect request type
         const type = body.type || "order";
+        const preferredLanguage = await getPreferredLanguage(supabase, body.business_id);
 
         // =========================================================
         // 🟢 1. ORDER CREATION
@@ -73,7 +101,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 success: true,
                 type: "order",
-                order_id: order.id
+                order_id: order.id,
+                preferred_language: preferredLanguage,
             });
         }
 
@@ -112,7 +141,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 success: true,
                 type: "delivery",
-                delivery
+                delivery,
+                preferred_language: preferredLanguage,
             });
         }
 
@@ -130,7 +160,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 success: true,
                 type: "payment",
-                updated: true
+                updated: true,
+                preferred_language: preferredLanguage,
             });
         }
 

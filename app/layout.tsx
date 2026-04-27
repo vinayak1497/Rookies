@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { LanguageProvider } from "@/components/i18n/language-provider";
+import { getServerTranslations } from "@/lib/i18n/server";
 import "./globals.css";
 
 const inter = Inter({
@@ -42,17 +44,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { language, messages, fallbackMessages } = await getServerTranslations();
+
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang={language} className={`${inter.variable} ${playfair.variable}`}>
       <body className="antialiased">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <LanguageProvider
+          initialLanguage={language}
+          initialMessages={messages}
+          initialFallbackMessages={fallbackMessages}
+        >
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </LanguageProvider>
         <Toaster
           position="top-right"
           richColors

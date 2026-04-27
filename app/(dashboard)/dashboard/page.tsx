@@ -12,6 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { getServerTranslations } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
     title: "Dashboard",
@@ -47,11 +48,15 @@ function formatDate(dateStr: string): string {
     });
 }
 
-function parseItems(items: unknown, notes: string | null): { name: string; qty: number }[] {
+function parseItems(
+    items: unknown,
+    notes: string | null,
+    fallbackLabel: string
+): { name: string; qty: number }[] {
     // Try the `items` JSONB column first (Supabase flat schema)
     if (items && Array.isArray(items)) {
         return items.map((item: { name?: string; qty?: number; quantity?: number }) => ({
-            name: item.name ?? "Item",
+            name: item.name ?? fallbackLabel,
             qty: item.qty ?? item.quantity ?? 1,
         }));
     }
@@ -61,7 +66,7 @@ function parseItems(items: unknown, notes: string | null): { name: string; qty: 
         const parsed = JSON.parse(notes);
         if (Array.isArray(parsed)) {
             return parsed.map((item: { name?: string; qty?: number; quantity?: number }) => ({
-                name: item.name ?? "Item",
+                name: item.name ?? fallbackLabel,
                 qty: item.qty ?? item.quantity ?? 1,
             }));
         }
@@ -70,6 +75,8 @@ function parseItems(items: unknown, notes: string | null): { name: string; qty: 
 }
 
 export default async function DashboardPage() {
+    const { t } = await getServerTranslations();
+
     let orderCount = 0;
     let totalRevenue = 0;
     let pendingCount = 0;
@@ -121,27 +128,27 @@ export default async function DashboardPage() {
 
     const stats = [
         {
-            title: "Total Orders",
+            title: t("dashboard.stats.total_orders"),
             value: String(orderCount),
-            change: `${orderCount} total`,
+            change: t("dashboard.stats.total", { count: orderCount }),
             icon: ShoppingBag,
         },
         {
-            title: "Revenue",
+            title: t("dashboard.stats.revenue"),
             value: formatINR(totalRevenue),
-            change: `from ${orderCount} orders`,
+            change: t("dashboard.stats.from_orders", { count: orderCount }),
             icon: IndianRupee,
         },
         {
-            title: "Customers",
+            title: t("dashboard.stats.customers"),
             value: String(customerCount),
-            change: `unique`,
+            change: t("dashboard.stats.unique"),
             icon: Users,
         },
         {
-            title: "Pending",
+            title: t("dashboard.stats.pending"),
             value: String(pendingCount),
-            change: "need action",
+            change: t("dashboard.stats.need_action"),
             icon: Package,
         },
     ];
@@ -150,9 +157,9 @@ export default async function DashboardPage() {
         <div className="space-y-8">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+                <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
                 <p className="text-muted-foreground mt-1">
-                    Welcome to your business overview.
+                    {t("dashboard.subtitle")}
                 </p>
             </div>
 
@@ -181,12 +188,12 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Recent Orders</CardTitle>
+                        <CardTitle className="text-lg">{t("dashboard.recent_orders.title")}</CardTitle>
                         <Link
                             href="/dashboard/orders"
                             className="text-xs text-primary hover:underline"
                         >
-                            View all →
+                            {t("dashboard.recent_orders.view_all")}
                         </Link>
                     </CardHeader>
                     <CardContent>
@@ -194,13 +201,17 @@ export default async function DashboardPage() {
                             <div className="flex flex-col items-center justify-center py-12 text-center">
                                 <ShoppingBag className="h-10 w-10 text-muted-foreground/40 mb-3" />
                                 <p className="text-sm text-muted-foreground">
-                                    No orders yet. They&apos;ll show up here once you start receiving them.
+                                    {t("dashboard.recent_orders.empty")}
                                 </p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 {recentOrders.map((order) => {
-                                    const itemsList = parseItems(order.items, order.notes);
+                                    const itemsList = parseItems(
+                                        order.items,
+                                        order.notes,
+                                        t("dashboard.items.item")
+                                    );
                                     return (
                                         <div
                                             key={order.id}
@@ -209,7 +220,7 @@ export default async function DashboardPage() {
                                             <div className="space-y-0.5">
                                                 <div className="flex items-center gap-2">
                                                     <p className="text-sm font-semibold text-foreground">
-                                                        {order.customer_name || "Walk-in"}
+                                                        {order.customer_name || t("dashboard.recent_orders.walk_in")}
                                                     </p>
                                                     {order.source && (
                                                         <span className="inline-flex items-center gap-0.5 rounded-full bg-green-50 text-green-700 px-2 py-0.5 text-[10px] font-medium">
@@ -251,13 +262,13 @@ export default async function DashboardPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">Activity Log</CardTitle>
+                        <CardTitle className="text-lg">{t("dashboard.activity.title")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <ArrowUpRight className="h-10 w-10 text-muted-foreground/40 mb-3" />
                             <p className="text-sm text-muted-foreground">
-                                Your business activity will be tracked here.
+                                {t("dashboard.activity.empty")}
                             </p>
                         </div>
                     </CardContent>

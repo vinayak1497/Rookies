@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/layout/container";
+import { useTranslations } from "@/components/i18n/language-provider";
 import {
     Flame,
     LayoutDashboard,
-    LayoutGrid,
     ShoppingBag,
     Users,
     IndianRupee,
@@ -24,19 +24,19 @@ import { useState } from "react";
 import { logout } from "@/lib/firebase-auth";
 
 const sidebarLinks = [
-    { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/ops-canvas", label: "Canvas", icon: LayoutGrid },
-    { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
-    { href: "/dashboard/customers", label: "Customers", icon: Users },
-    { href: "/dashboard/payments", label: "Payments", icon: IndianRupee },
-    { href: "/dashboard/inventory", label: "Inventory", icon: Package },
-    { href: "/delivery", label: "Delivery", icon: Truck },
-    { href: "/dashboard/ai-knowledge", label: "AI Knowledge", icon: Brain },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    { href: "/dashboard", labelKey: "nav.overview", icon: LayoutDashboard },
+    { href: "/dashboard/orders", labelKey: "nav.orders", icon: ShoppingBag },
+    { href: "/dashboard/customers", labelKey: "nav.customers", icon: Users },
+    { href: "/dashboard/payments", labelKey: "nav.payments", icon: IndianRupee },
+    { href: "/dashboard/inventory", labelKey: "nav.inventory", icon: Package },
+    { href: "/delivery", labelKey: "nav.delivery", icon: Truck },
+    { href: "/dashboard/ai-knowledge", labelKey: "nav.ai_knowledge", icon: Brain },
+    { href: "/dashboard/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 function UserMenu() {
     const router = useRouter();
+    const t = useTranslations();
     const [open, setOpen] = useState(false);
 
     async function handleSignOut() {
@@ -63,7 +63,7 @@ function UserMenu() {
                             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                         >
                             <LogOut className="h-4 w-4" />
-                            Sign out
+                            {t("nav.sign_out")}
                         </button>
                     </div>
                 </>
@@ -74,6 +74,7 @@ function UserMenu() {
 
 function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname();
+    const t = useTranslations();
 
     return (
         <aside className={cn("flex flex-col h-full", className)}>
@@ -104,7 +105,7 @@ function Sidebar({ className }: { className?: string }) {
                             )}
                         >
                             <link.icon className="h-4 w-4 shrink-0" />
-                            {link.label}
+                            {t(link.labelKey)}
                         </Link>
                     );
                 })}
@@ -114,7 +115,9 @@ function Sidebar({ className }: { className?: string }) {
             <div className="border-t border-border p-3">
                 <div className="flex items-center gap-3 px-3 py-2.5">
                     <UserMenu />
-                    <span className="text-sm font-medium text-muted-foreground">Account</span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                        {t("nav.account")}
+                    </span>
                 </div>
             </div>
         </aside>

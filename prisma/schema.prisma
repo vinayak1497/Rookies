@@ -40,6 +40,7 @@ model Business {
   pincode     String?
   gstNumber   String?  @map("gst_number")
   logoUrl     String?  @map("logo_url")
+  preferredLanguage String @default("en") @map("preferred_language")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
