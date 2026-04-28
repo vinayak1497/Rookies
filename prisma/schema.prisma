@@ -51,6 +51,7 @@ model Business {
   orders       Order[]
   customers    Customer[]
   payments     Payment[]
+  paymentRecords PaymentRecord[]
   inventory    InventoryItem[]
   activityLogs ActivityLog[]
 
@@ -182,4 +183,22 @@ model ActivityLog {
 
   @@index([businessId, createdAt])
   @@map("activity_logs")
+}
+
+model PaymentRecord {
+  id            String   @id @default(uuid())
+  business_id   String
+  customer_name String
+  phone         String?
+  amount        Float
+  status        String   // "pending" | "paid" | "overdue"
+  due_date      DateTime?
+  paid_at       DateTime?
+  source        String   // "manual" | "whatsapp" | "upi"
+  created_at    DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("payment_records")
 }
