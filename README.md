@@ -1,6 +1,6 @@
 # Rookies — Virtual COO for Indian Small Businesses
 
-> **Live:** [rookies-apsit.vercel.app](https://rookies-apsit.vercel.app)
+> **Live:** [rookies-apsit.vercel.app](https://rookies-jet.vercel.app/)
 
 A WhatsApp-first AI SaaS platform built with **Next.js 16**, **Clerk**, **Supabase**, **Prisma**, and **TailwindCSS v4**.
 
